@@ -158,10 +158,8 @@ import me.vkryl.android.animator.FactorAnimator;
 import kotlin.Unit;
 
 import xyz.nextalone.nnngram.activity.MainSettingActivity;
-import xyz.nextalone.nnngram.config.ConfigManager;
 import xyz.nextalone.nnngram.ui.BottomBuilder;
 import xyz.nextalone.nnngram.utils.AlertUtil;
-import xyz.nextalone.nnngram.utils.Defines;
 import xyz.nextalone.nnngram.utils.Log;
 import xyz.nextalone.nnngram.utils.Utils;
 
@@ -967,42 +965,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             Log.shareLog(getContext());
             return Unit.INSTANCE;
         });
-        builder.addItem(getString(R.string.CheckUpdate), R.drawable.msg_search, (it) -> {
-            Browser.openUrl(getContext(), "tg://update");
-            return Unit.INSTANCE;
-        });
-
-        String currentChannel = " - ";
-        int currentUpdateChannel;
-        switch (ConfigManager.getIntOrDefault(Defines.updateChannel, -1)) {
-            case Defines.disableAutoUpdate:
-                currentUpdateChannel = Defines.disableAutoUpdate;
-                currentChannel += getString(R.string.AutoCheckUpdateOFF);
-                break;
-            case Defines.stableChannel:
-            default:
-                currentUpdateChannel = Defines.stableChannel;
-                currentChannel += getString(R.string.AutoCheckUpdateStable);
-                break;
-        }
-
-        builder.addItem(getString(R.string.AutoCheckUpdateSwitch) + currentChannel, R.drawable.baseline_system_update_24, (it) -> {
-            BottomBuilder switchBuilder = new BottomBuilder(getParentActivity());
-            switchBuilder.addTitle(getString(R.string.AutoCheckUpdateSwitch));
-            switchBuilder.addRadioItem(getString(R.string.AutoCheckUpdateOFF), currentUpdateChannel == Defines.disableAutoUpdate, (radioButtonCell) -> {
-                ConfigManager.putInt(Defines.updateChannel, Defines.disableAutoUpdate);
-                switchBuilder.doRadioCheck(radioButtonCell);
-                return Unit.INSTANCE;
-            });
-            switchBuilder.addRadioItem(getString(R.string.AutoCheckUpdateStable), currentUpdateChannel == Defines.stableChannel, (radioButtonCell) -> {
-                ConfigManager.putInt(Defines.updateChannel, Defines.stableChannel);
-                switchBuilder.doRadioCheck(radioButtonCell);
-                return Unit.INSTANCE;
-            });
-            showDialog(switchBuilder.create());
-            return Unit.INSTANCE;
-        });
-
         builder.show();
     }
 
@@ -1527,10 +1489,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                 getString(R.string.DebugMenuCallSettings),
                 null,
-                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
+                null,
                 getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects" : null,
-                BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
+                null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? "Reset suggestions" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? getString(R.string.DebugMenuClearWebViewCache) : null,
                 getString(R.string.DebugMenuClearWebViewCookies),
@@ -1636,16 +1598,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 VoIPHelper.showCallDebugSettings(getParentActivity());
             } else if (which == 8) { // ?
                 SharedConfig.toggleRoundCamera16to9();
-            } else if (which == 9) { // Check app update
-                ((LaunchActivity) getParentActivity()).checkAppUpdate(true);
             } else if (which == 10) { // Read all chats
                 getMessagesStorage().readAllDialogs(-1);
             } else if (which == 11) { // Voip audio effects
                 SharedConfig.toggleDisableVoiceAudioEffects();
-            } else if (which == 12) { // Clean app update
-                SharedConfig.pendingAppUpdate = null;
-                SharedConfig.saveConfig();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
             } else if (which == 13) { // Reset suggestions
                 Set<String> suggestions = getMessagesController().pendingSuggestions;
                 suggestions.add("VALIDATE_PHONE_NUMBER");

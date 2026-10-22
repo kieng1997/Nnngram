@@ -162,12 +162,7 @@ object Defines {
     const val doubleTabTranslate = 7
     const val doubleTabReverse = 8
 
-    // Auto Update
-    const val lastCheckUpdateTime = "lastCheckUpdateTime"
-    const val updateChannel = "updateChannel"
-    const val stableChannel = 1
-    const val disableAutoUpdate = 0
-//    const val ciChannel = 2
+    // Channel follow reminder
     const val updateChannelSkip = "updateChannelSkip"
 
     // Tab Menu

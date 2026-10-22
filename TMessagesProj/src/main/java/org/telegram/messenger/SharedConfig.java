@@ -341,7 +341,6 @@ public class SharedConfig {
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
-    public static long lastUpdateCheckTime;
 
     public static boolean hasEmailLogin;
 
@@ -743,22 +742,6 @@ public class SharedConfig {
                 editor.putBoolean("proxyRotationEnabled", proxyRotationEnabled);
                 editor.putInt("proxyRotationTimeout", proxyRotationTimeout);
 
-                if (pendingAppUpdate != null) {
-                    try {
-                        SerializedData data = new SerializedData(pendingAppUpdate.getObjectSize());
-                        pendingAppUpdate.serializeToStream(data);
-                        String str = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
-                        editor.putString("appUpdate", str);
-                        editor.putInt("appUpdateBuild", pendingAppUpdateBuildVersion);
-                        data.cleanup();
-                    } catch (Exception ignore) {
-
-                    }
-                } else {
-                    editor.remove("appUpdate");
-                }
-                editor.putLong("appUpdateCheckTime", lastUpdateCheckTime);
-
                 editor.apply();
 
                 editor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Context.MODE_PRIVATE).edit();
@@ -825,29 +808,8 @@ public class SharedConfig {
             } else {
                 passcodeSalt = new byte[0];
             }
-            lastUpdateCheckTime = preferences.getLong("appUpdateCheckTime", System.currentTimeMillis());
-            try {
-                String update = preferences.getString("appUpdate", null);
-                if (update != null) {
-                    pendingAppUpdateBuildVersion = preferences.getInt("appUpdateBuild", buildVersion());
-                    byte[] arr = Base64.decode(update, Base64.DEFAULT);
-                    if (arr != null) {
-                        SerializedData data = new SerializedData(arr);
-                        pendingAppUpdate = (TLRPC.TL_help_appUpdate) TLRPC.help_AppUpdate.TLdeserialize(data, data.readInt32(false), false);
-                        data.cleanup();
-                    }
-                }
-                if (pendingAppUpdate != null) {
-                    long updateTime = 0;
-                    int currentVersion = BuildConfig.VERSION_CODE;
-                    String updateVersionString = BuildConfig.VERSION_NAME;
-                    if (pendingAppUpdateBuildVersion != currentVersion || pendingAppUpdate.version == null || updateVersionString.compareTo("v" + pendingAppUpdate.version) >= 0) {
-                        pendingAppUpdate = null;
-                        AndroidUtilities.runOnUIThread(SharedConfig::saveConfig);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (preferences.contains("appUpdate") || preferences.contains("appUpdateBuild") || preferences.contains("appUpdateCheckTime")) {
+                preferences.edit().remove("appUpdate").remove("appUpdateBuild").remove("appUpdateCheckTime").apply();
             }
 
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -1039,19 +1001,6 @@ public class SharedConfig {
             return false;
         }
         return pendingAppUpdateBuildVersion == BuildConfig.VERSION_CODE;
-    }
-
-    public static boolean setNewAppVersionAvailable(TLRPC.TL_help_appUpdate update) {
-        if (update == null) {
-            pendingAppUpdate = null;
-            pendingAppUpdateBuildVersion = 0;
-            saveConfig();
-            return false;
-        }
-        pendingAppUpdate = update;
-        pendingAppUpdateBuildVersion = BuildConfig.VERSION_CODE;
-        saveConfig();
-        return true;
     }
 
     // returns a >= b

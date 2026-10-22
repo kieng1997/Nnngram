@@ -39,9 +39,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import java.io.File;
 import java.util.Locale;
 
-import kotlin.Unit;
 import xyz.nextalone.nnngram.utils.APKUtils;
-import xyz.nextalone.nnngram.utils.UpdateUtils;
 
 public class BlockingUpdateView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -309,18 +307,6 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoaded);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadFailed);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadProgressChanged);
-        if (check) {
-            UpdateUtils.checkUpdate((response, error) -> {
-                if (response != null) {
-                    if (!response.can_not_skip) {
-                        setVisibility(GONE);
-                        SharedConfig.pendingAppUpdate = null;
-                        SharedConfig.saveConfig();
-                    }
-                }
-                return Unit.INSTANCE;
-            });
-        }
     }
 
     Drawable gradientDrawableTop = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {Theme.getColor(Theme.key_windowBackgroundWhite), Color.TRANSPARENT });

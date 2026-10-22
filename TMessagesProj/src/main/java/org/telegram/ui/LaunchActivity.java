@@ -174,7 +174,6 @@ import org.telegram.ui.Components.AppIconBulletinLayout;
 import org.telegram.ui.Components.AttachBotIntroTopView;
 import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.BatteryDrawable;
-import org.telegram.ui.Components.BlockingUpdateView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -257,14 +256,10 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import kotlin.Unit;
 import xyz.nextalone.gen.Config;
-import xyz.nextalone.nnngram.config.ConfigManager;
 import xyz.nextalone.nnngram.helpers.MonetHelper;
 import xyz.nextalone.nnngram.helpers.SettingsHelper;
-import xyz.nextalone.nnngram.utils.Defines;
 import xyz.nextalone.nnngram.utils.Log;
-import xyz.nextalone.nnngram.utils.UpdateUtils;
 import xyz.nextalone.nnngram.utils.Utils;
 
 public class LaunchActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, IPipActivity {
@@ -324,7 +319,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private PasscodeViewDialog passcodeDialog;
     private List<PasscodeView> overlayPasscodeViews = new ArrayList<>();
     private TermsOfServiceView termsOfServiceView;
-    private BlockingUpdateView blockingUpdateView;
     public final ArrayList<Dialog> visibleDialogs = new ArrayList<>();
     private Dialog proxyErrorDialog;
     private SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow selectAnimatedEmojiDialog;
@@ -1397,14 +1391,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             rightActionBarLayout.getView().setVisibility(View.GONE);
             backgroundTablet.setVisibility(!actionBarLayout.getFragmentStack().isEmpty() ? View.GONE : View.VISIBLE);
         }
-    }
-
-    private void showUpdateActivity(int account, TLRPC.TL_help_appUpdate update, boolean check) {
-        if (blockingUpdateView == null) {
-            blockingUpdateView = new BlockingUpdateView(LaunchActivity.this);
-            drawerLayoutContainer.addView(blockingUpdateView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        }
-        blockingUpdateView.show(account, update, check);
     }
 
     private void showTosActivity(int account, TLRPC.TL_help_termsOfService tos) {
@@ -2649,8 +2635,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         } else {
                                             open_settings = 1;
                                         }
-                                    } else if (url.startsWith("tg:upgrade") || url.startsWith("tg://upgrade") || url.startsWith("tg:update") || url.startsWith("tg://update")) {
-                                        checkAppUpdate(true);
                                     } else if ((url.startsWith("tg:search") || url.startsWith("tg://search"))) {
                                         url = url.replace("tg:search", "tg://telegram.org").replace("tg://search", "tg://telegram.org");
                                         data = Uri.parse(url);
@@ -5992,55 +5976,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         return foundContacts;
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    public void checkAppUpdate(boolean force) {
-        if (!force && ConfigManager.getIntOrDefault(Defines.updateChannel, Defines.stableChannel) == Defines.disableAutoUpdate) {
-            return;
-        }
-        if (!force && System.currentTimeMillis() < ConfigManager.getLongOrDefault(Defines.lastCheckUpdateTime, 0L) + 1000L * 60 * 60) {
-            return;
-        }
-        ConfigManager.putLong(Defines.lastCheckUpdateTime, System.currentTimeMillis());
-        Log.d("checking update");
-        final int accountNum = currentAccount;
-        UpdateUtils.checkUpdate((res, error) -> {
-            AndroidUtilities.runOnUIThread(() -> {
-                if (res != null) {
-                    Log.d("checkUpdate: res is not null");
-                    if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.version.equals(res.version)) {
-                        Log.d("checkUpdate: same version");
-                        return;
-                    }
-                    if (SharedConfig.setNewAppVersionAvailable(res)) {
-                        Log.d("checkUpdate: new version available: " + res.version);
-                        if (res.can_not_skip) {
-                            showUpdateActivity(accountNum, res, false);
-                        } else {
-                            ApplicationLoader.applicationLoaderInstance.showUpdateAppPopup(LaunchActivity.this, res, accountNum);
-                        }
-                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
-                    }
-                } else {
-                    Log.d("checkUpdate: res is null");
-                    if (force) {
-                        if (!error) {
-//                            if (!BuildConfig.isPlay) {
-                                showBulletin(factory -> factory.createErrorBulletin(LocaleController.getString("VersionUpdateNoUpdate", R.string.VersionUpdateNoUpdate)));
-//                            } else {
-//                                showBulletin(factory -> factory.createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString("NoUpdateAvailablePlay", R.string.NoUpdateAvailablePlay), LocaleController.getString("NoUpdateAvailablePlayDelay", R.string.NoUpdateAvailablePlayDelay)));
-//                            }
-                        } else {
-                            AlertsCreator.createSimpleAlert(this, LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error).show();
-                        }
-                    }
-                    SharedConfig.setNewAppVersionAvailable(null);
-                }
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
-            });
-            return Unit.INSTANCE;
-        });
-    }
-
     public Dialog showAlertDialog(AlertDialog.Builder builder) {
         try {
             AlertDialog dialog = builder.show();
@@ -7037,10 +6972,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         if (UserConfig.getInstance(UserConfig.selectedAccount).unacceptedTermsOfService != null) {
             showTosActivity(UserConfig.selectedAccount, UserConfig.getInstance(UserConfig.selectedAccount).unacceptedTermsOfService);
-        } else if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.can_not_skip) {
-            showUpdateActivity(UserConfig.selectedAccount, SharedConfig.pendingAppUpdate, true);
         }
-        checkAppUpdate(false);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ApplicationLoader.canDrawOverlays = Settings.canDrawOverlays(this);

@@ -72,7 +72,6 @@ import org.telegram.ui.recyclerview.ChatListItemAnimator;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChannelBoostsController;
@@ -4347,11 +4346,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider), 30))
         );
         buttonTextView.setOnClickListener(v -> {
-            if (ApplicationLoader.isStandaloneBuild()) {
-                if (LaunchActivity.instance != null) {
-                    LaunchActivity.instance.checkAppUpdate(true);
-                }
-            }
+            Browser.openUrl(getContext(), BuildVars.isHuaweiStoreApp() ? BuildVars.HUAWEI_STORE_URL : BuildVars.PLAYSTORE_APP_URL);
         });
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 0));

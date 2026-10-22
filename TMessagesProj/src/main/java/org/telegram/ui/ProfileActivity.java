@@ -138,7 +138,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.AuthTokensHelper;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BirthdayController;
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
@@ -4667,59 +4666,6 @@ if (myProfile && bottomButton != null) {
                     Log.shareLog(getContext());
                     return Unit.INSTANCE;
                 });
-                builder.addItem(LocaleController.getString("CheckUpdate", R.string.CheckUpdate), R.drawable.msg_search, (it) -> {
-                    Browser.openUrl(context, "tg://update");
-                    return Unit.INSTANCE;
-                });
-
-                String currentChannel = " - ";
-                int currentUpdateChannel;
-                switch (ConfigManager.getIntOrDefault(Defines.updateChannel, -1)) {
-                    case Defines.disableAutoUpdate:
-                        currentUpdateChannel = Defines.disableAutoUpdate;
-                        currentChannel += LocaleController.getString("AutoCheckUpdateOFF", R.string.AutoCheckUpdateOFF);
-                        break;
-                    case Defines.stableChannel:
-                        currentUpdateChannel = Defines.stableChannel;
-                        currentChannel += LocaleController.getString("AutoCheckUpdateStable", R.string.AutoCheckUpdateStable);
-                        break;
-//                    case Defines.ciChannel:
-//                        currentUpdateChannel = Defines.ciChannel;
-//                        currentChannel += LocaleController.getString("AutoCheckUpdatePreview", R.string.AutoCheckUpdatePreview);
-//                        break;
-                    default:
-//                        if (BuildConfig.VERSION_NAME.contains("preview")) {
-//                            currentUpdateChannel = Defines.ciChannel;
-//                            currentChannel += LocaleController.getString("AutoCheckUpdatePreview", R.string.AutoCheckUpdatePreview);
-//
-//                        } else {
-                        currentUpdateChannel = Defines.stableChannel;
-                        currentChannel += LocaleController.getString("AutoCheckUpdateStable", R.string.AutoCheckUpdateStable);
-//                        }
-                }
-
-                builder.addItem(LocaleController.getString("AutoCheckUpdateSwitch", R.string.AutoCheckUpdateSwitch) + currentChannel, R.drawable.baseline_system_update_24, (it) -> {
-                    BottomBuilder switchBuilder = new BottomBuilder(getParentActivity());
-                    switchBuilder.addTitle(LocaleController.getString("AutoCheckUpdateSwitch", R.string.AutoCheckUpdateSwitch));
-                    switchBuilder.addRadioItem(LocaleController.getString("AutoCheckUpdateOFF", R.string.AutoCheckUpdateOFF), currentUpdateChannel == Defines.disableAutoUpdate, (radioButtonCell) -> {
-                        ConfigManager.putInt(Defines.updateChannel, Defines.disableAutoUpdate);
-                        switchBuilder.doRadioCheck(radioButtonCell);
-                        return Unit.INSTANCE;
-                    });
-                    switchBuilder.addRadioItem(LocaleController.getString("AutoCheckUpdateStable", R.string.AutoCheckUpdateStable), currentUpdateChannel == Defines.stableChannel, (radioButtonCell) -> {
-                        ConfigManager.putInt(Defines.updateChannel, Defines.stableChannel);
-                        switchBuilder.doRadioCheck(radioButtonCell);
-                        return Unit.INSTANCE;
-                    });
-//                    switchBuilder.addRadioItem(LocaleController.getString("AutoCheckUpdatePreview", R.string.AutoCheckUpdatePreview), currentUpdateChannel == Defines.ciChannel, (radioButtonCell) -> {
-//                        ConfigManager.putInt(Defines.updateChannel, Defines.ciChannel);
-//                        switchBuilder.doRadioCheck(radioButtonCell);
-//                        return Unit.INSTANCE;
-//                    });
-                    showDialog(switchBuilder.create());
-                    return Unit.INSTANCE;
-                });
-
                 builder.show();
             } else if (position == premiumRow) {
                 presentFragment(new PremiumPreviewFragment("settings"));
@@ -4821,10 +4767,10 @@ if (myProfile && bottomButton != null) {
                                 getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                                 getString(R.string.DebugMenuCallSettings),
                                 null,
-                                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
+                                null,
                                 getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects" : null,
-                                BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
+                                null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Reset suggestions" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? getString(R.string.DebugMenuClearWebViewCache) : null,
                                 getString(R.string.DebugMenuClearWebViewCookies),
@@ -4925,16 +4871,10 @@ if (myProfile && bottomButton != null) {
                                 VoIPHelper.showCallDebugSettings(getParentActivity());
                             } else if (which == 8) { // ?
                                 SharedConfig.toggleRoundCamera16to9();
-                            } else if (which == 9) { // Check app update
-                                ((LaunchActivity) getParentActivity()).checkAppUpdate(true);
                             } else if (which == 10) { // Read all chats
                                 getMessagesStorage().readAllDialogs(-1);
                             } else if (which == 11) { // Voip audio effects
                                 SharedConfig.toggleDisableVoiceAudioEffects();
-                            } else if (which == 12) { // Clean app update
-                                SharedConfig.pendingAppUpdate = null;
-                                SharedConfig.saveConfig();
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
                             } else if (which == 13) { // Reset suggestions
                                 Set<String> suggestions = getMessagesController().pendingSuggestions;
                                 suggestions.add("VALIDATE_PHONE_NUMBER");

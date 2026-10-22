@@ -43206,32 +43206,7 @@ public class ChatActivity extends BaseFragment implements
         }
 
         private void didPressAppUpdateButtonInternal() {
-            if (ApplicationLoader.isStandaloneBuild()) {
-                if (LaunchActivity.instance != null) {
-                    /*
-                    if (progressDialogCurrent != null) {
-                        progressDialogCurrent.cancel(true);
-                    }
-                    progressDialogCurrent = cell == null || cell.getMessageObject() == null ? null : new Browser.Progress() {
-                        @Override
-                        public void init() {
-                            progressDialogAtMessageId = cell.getMessageObject().getId();
-                            progressDialogAtMessageType = PROGRESS_INSTANT;
-                            progressDialogLinkSpan = null;
-                            cell.invalidate();
-                        }
-
-                        @Override
-                        public void end(boolean replaced) {
-                            if (!replaced) {
-                                AndroidUtilities.runOnUIThread(ChatActivity.this::resetProgressDialogLoading, 250);
-                            }
-                        }
-                    };
-                    */
-                    LaunchActivity.instance.checkAppUpdate(true);
-                }
-            } else if (BuildVars.isHuaweiStoreApp()) {
+            if (BuildVars.isHuaweiStoreApp()) {
                 Browser.openUrl(getContext(), BuildVars.HUAWEI_STORE_URL);
             } else {
                 Browser.openUrl(getContext(), BuildVars.PLAYSTORE_APP_URL);

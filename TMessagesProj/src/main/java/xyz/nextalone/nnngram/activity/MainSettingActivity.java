@@ -79,10 +79,8 @@ public class MainSettingActivity extends BaseActivity {
     private int sourceCodeRow;
     private int licenseRow;
     private int about2Row;
-    private int updateRow;
     private int passcodeRow;
     private int pressCount = 0;
-    private Context context;
 
     private boolean sensitiveEnabled;
     private boolean sensitiveCanChange;
@@ -120,8 +118,6 @@ public class MainSettingActivity extends BaseActivity {
             Browser.openUrl(getParentActivity(), "https://github.com/PreviousAlone/nnngram");
         } else if (position == licenseRow) {
             presentFragment(new LicenseActivity());
-        } else if (position == updateRow) {
-            Browser.openUrl(context, "tg://update");
         } else if (position == passcodeRow) {
             presentFragment(new PasscodeSettingActivity());
         }
@@ -207,7 +203,6 @@ public class MainSettingActivity extends BaseActivity {
             }
         });
 
-        context = mContext;
 
         return fragmentView;
     }
@@ -243,8 +238,6 @@ public class MainSettingActivity extends BaseActivity {
         sourceCodeRow = addRow();
         licenseRow = addRow();
         about2Row = addRow();
-
-        updateRow = addRow();
 
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
@@ -293,9 +286,6 @@ public class MainSettingActivity extends BaseActivity {
                     } else if (position == licenseRow) {
                         textCell.setText(LocaleController.getString("OpenSource", R.string.OpenSource), true);
                     }
-                    if (position == updateRow) {
-                        textCell.setTextAndValue(LocaleController.getString("CheckUpdate", R.string.CheckUpdate), "Click Me", true);
-                    }
                     break;
                 }
                 case TYPE_HEADER: {
@@ -322,7 +312,7 @@ public class MainSettingActivity extends BaseActivity {
                 return TYPE_SHADOW;
             } else if (position > categoriesRow && position < categories2Row) {
                 return TYPE_TEXT;
-            } else if ((position >= channelRow && position < about2Row) || position == updateRow) {
+            } else if (position >= channelRow && position < about2Row) {
                 return TYPE_SETTINGS;
             } else if (position == categoriesRow || position == aboutRow) {
                 return TYPE_HEADER;
