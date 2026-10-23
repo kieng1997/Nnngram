@@ -1,6 +1,6 @@
 # Nnngram — Project Guide
 
-Telegram Android fork。直接基于 **Telegram official Android client** (`DrKLO/Telegram` 上游)，跟随 upstream `master@official` tag 周期 merge；包名 `xyz.nextalone.nnngram`。
+Telegram Android fork。直接基于 **Telegram official Android client** (`DrKLO/Telegram` 上游)，跟随 upstream `master@official` tag 周期 merge；源码包名 `xyz.nextalone.nnngram`，安装包名 `applicationId=xyz.nextalone.nnngramx`（可与原版 Nnngram 并存）。
 
 > 历史上 fork 链是 `Telegram → Nullgram → Nnngram`，但目前 **不再依赖 Nullgram 仓库**，所有 fork-only 代码在本仓库内独立维护，merge 只对接 upstream Telegram。
 
@@ -8,7 +8,7 @@ Telegram Android fork。直接基于 **Telegram official Android client** (`DrKL
 
 | 路径 | 角色 |
 |---|---|
-| `TMessagesProj/` | 主 module (APK 产物来源)。`namespace=org.telegram.messenger`, `applicationId=xyz.nextalone.nnngram` |
+| `TMessagesProj/` | 主 module (APK 产物来源)。`namespace=org.telegram.messenger`, `applicationId=xyz.nextalone.nnngramx`（源码包仍为 `xyz.nextalone.nnngram`，仅安装身份不同） |
 | `TMessagesProj/src/main/java/org/telegram/**` | 上游代码 (merge 时尽量按 upstream，不主动改) |
 | `TMessagesProj/src/main/java/xyz/nextalone/nnngram/**` | fork-only Java/Kotlin |
 | `TMessagesProj/src/main/res/values{,-zh,-zh-rTW}/strings_nullgram.xml` | fork-only 字符串 (3 语言对齐) |
@@ -26,8 +26,8 @@ Telegram Android fork。直接基于 **Telegram official Android client** (`DrKL
 - Debug APK (仅编译): `./gradlew :TMessagesProj:assembleDebug`
 - Release APK: `./gradlew :TMessagesProj:assembleRelease`
 - 产物: `TMessagesProj/build/outputs/apk/{debug,release}/Nnngram-v<ver>-<sha>-<abi>.apk`
-- 卸载: `adb uninstall xyz.nextalone.nnngram`
-- 启动: `adb shell monkey -p xyz.nextalone.nnngram -c android.intent.category.LAUNCHER 1`
+- 卸载: `adb uninstall xyz.nextalone.nnngramx`
+- 启动: `adb shell monkey -p xyz.nextalone.nnngramx -c android.intent.category.LAUNCHER 1`
 - 清理: `./gradlew clean`
 - Lint: `./gradlew :TMessagesProj:lintDebug`
 - 任务列表: `./gradlew :TMessagesProj:tasks`

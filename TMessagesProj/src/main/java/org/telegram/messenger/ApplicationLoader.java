@@ -178,7 +178,7 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        return new File("/data/data/xyz.nextalone.nnngram/files");
+        return new File("/data/data/" + BuildConfig.APPLICATION_ID + "/files");
     }
 
     public static File getFilesDirFixed(String child) {
