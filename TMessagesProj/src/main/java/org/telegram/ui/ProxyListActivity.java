@@ -227,7 +227,15 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         }
 
         private String xrayLabel(String link) {
-            return link != null && link.regionMatches(true, 0, "vmess://", 0, 8) ? "VMess" : "SS";
+            if (link != null) {
+                if (link.regionMatches(true, 0, "vless://", 0, 8)) {
+                    return "VLESS";
+                }
+                if (link.regionMatches(true, 0, "vmess://", 0, 8)) {
+                    return "VMess";
+                }
+            }
+            return "SS";
         }
 
         public void updateStatus() {

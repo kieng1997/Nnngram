@@ -73,7 +73,9 @@ object QrHelper {
     fun isXrayLink(link: String?): Boolean {
         if (link == null) return false
         val trimmed = link.trim()
-        return trimmed.startsWith("ss://", ignoreCase = true) || trimmed.startsWith("vmess://", ignoreCase = true)
+        return trimmed.startsWith("ss://", ignoreCase = true) ||
+            trimmed.startsWith("vmess://", ignoreCase = true) ||
+            trimmed.startsWith("vless://", ignoreCase = true)
     }
 
     @JvmStatic

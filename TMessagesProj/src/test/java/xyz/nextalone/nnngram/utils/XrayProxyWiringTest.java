@@ -114,6 +114,13 @@ public final class XrayProxyWiringTest {
         assertNotContains(proxyList, "no loopback in list label", "\"127.0.0.1\"");
         assertContains(qrHelper, "qr routes xray links", "XrayProxyActivity(link)");
         assertContains(qrHelper, "qr keeps unknown links", "Browser.openUrl(fragment.parentActivity, link, true, false)");
+        assertContains(qrHelper, "qr recognizes vless links", "\"vless://\"");
+
+        // VLESS display: REALITY distinct from TLS, vless recognized everywhere.
+        assertContains(xrayActivity, "editor names VLESS", "\"vless\".equals(protocol)");
+        assertContains(xrayActivity, "REALITY shown distinctly", "\"reality\".equals(security)");
+        assertContains(xrayActivity, "REALITY never plain TLS", "transport += \" + REALITY\"");
+        assertContains(proxyList, "list labels VLESS", "\"vless://\", 0, 8");
 
         // The editor keeps secrets out of its own error path.
         assertNotContains(xrayActivity, "no link logging", "Log.e(");

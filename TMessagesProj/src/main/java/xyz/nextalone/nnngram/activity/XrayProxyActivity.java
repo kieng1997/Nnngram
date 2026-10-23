@@ -56,7 +56,8 @@ import xraybridge.Profile;
 import xraybridge.Xraybridge;
 
 /**
- * Adds or edits a Shadowsocks / VMess proxy handled by the bundled Xray core.
+ * Adds or edits a Shadowsocks / VMess / VLESS proxy handled by the bundled
+ * Xray core.
  *
  * <p>The share link is the whole configuration; the Go bridge owns parsing, so
  * this screen only shows the parsed summary and never re-implements a parser.
@@ -420,12 +421,22 @@ public class XrayProxyActivity extends BaseFragment {
         errorCell.setText(parseOk ? null : LocaleController.getString(R.string.XrayProxyInvalid));
         if (parseOk) {
             final String protocol = profile.protocol();
+            final boolean vless = "vless".equals(protocol);
             protocolCell.setTextAndValue(LocaleController.getString(R.string.XrayProxyProtocol),
-                    "shadowsocks".equals(protocol) ? "Shadowsocks" : "VMess", true);
+                    "shadowsocks".equals(protocol) ? "Shadowsocks"
+                            : vless ? "VLESS" : "VMess", true);
             serverCell.setTextAndValue(LocaleController.getString(R.string.XrayProxyServer),
                     profile.address() + ":" + profile.port(), true);
             String transport = profile.transport();
-            if (profile.tls()) {
+            if (vless) {
+                // REALITY is its own security layer, never shown as plain TLS.
+                final String security = profile.security();
+                if ("reality".equals(security)) {
+                    transport += " + REALITY";
+                } else if ("tls".equals(security)) {
+                    transport += " + TLS";
+                }
+            } else if (profile.tls()) {
                 transport += " + TLS";
             }
             transportCell.setTextAndValue(LocaleController.getString(R.string.XrayProxyTransport), transport, false);

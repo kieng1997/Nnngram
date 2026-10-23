@@ -90,6 +90,60 @@ func buildOutbound(p *Profile) (map[string]any, error) {
 			"streamSettings": stream,
 			"tag":            "nnn-proxy",
 		}, nil
+	case "vless":
+		stream := map[string]any{"network": p.transport}
+		if p.transport == "ws" {
+			ws := map[string]any{"path": p.path}
+			if p.host != "" {
+				ws["headers"] = map[string]any{"Host": p.host}
+			}
+			stream["wsSettings"] = ws
+		}
+		user := map[string]any{"id": p.uuid, "encryption": "none"}
+		if p.flow != "" {
+			user["flow"] = p.flow
+		}
+		switch {
+		case p.reality:
+			// The pinned core's REALITY client has no ALPN field; the parser
+			// already rejects alpn for REALITY, so nothing is emitted here.
+			r := map[string]any{
+				"serverName":  p.sni,
+				"publicKey":   p.publicKey,
+				"shortId":     p.shortID,
+				"fingerprint": p.fingerprint,
+				"spiderX":     p.spiderX,
+			}
+			stream["security"] = "reality"
+			stream["realitySettings"] = r
+		case p.tls:
+			t := map[string]any{}
+			if p.sni != "" {
+				t["serverName"] = p.sni
+			}
+			if len(p.alpn) > 0 {
+				t["alpn"] = p.alpn
+			}
+			if p.fingerprint != "" {
+				t["fingerprint"] = p.fingerprint
+			}
+			stream["security"] = "tls"
+			stream["tlsSettings"] = t
+		default:
+			stream["security"] = "none"
+		}
+		return map[string]any{
+			"protocol": "vless",
+			"settings": map[string]any{
+				"vnext": []any{map[string]any{
+					"address": p.address,
+					"port":    p.port,
+					"users":   []any{user},
+				}},
+			},
+			"streamSettings": stream,
+			"tag":            "nnn-proxy",
+		}, nil
 	}
 	return nil, errConfig
 }

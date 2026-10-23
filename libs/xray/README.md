@@ -6,9 +6,36 @@ through the generated `xraybridge` Java package: parse a share link, start a
 core with a loopback SOCKS5 inbound, hand the port and credentials to the
 existing Telegram proxy chain.
 
-Only Shadowsocks (AEAD + 2022) and VMess (tcp/ws, optional TLS) are exposed.
-There is no TUN and no global VPN: the core listens on `127.0.0.1` only, with
-UDP disabled and per-session random SOCKS credentials.
+Only Shadowsocks (AEAD + 2022), VMess (tcp/ws, optional TLS) and VLESS
+(tcp/ws, TLS, REALITY) are exposed. There is no TUN and no global VPN: the
+core listens on `127.0.0.1` only, with UDP disabled and per-session random
+SOCKS credentials.
+
+## Support matrix
+
+| | Shadowsocks | VMess | VLESS |
+|---|---|---|---|
+| link | `ss://` (SIP002 + legacy base64) | `vmess://` (base64 JSON) | `vless://uuid@host:port?...` |
+| transports | tcp | tcp / ws | tcp (incl. `type=raw` alias) / ws |
+| security | core-managed (AEAD/2022) | none / TLS | none / TLS / REALITY (tcp only) |
+| flow | — | — | `xtls-rprx-vision` (+`-udp443`) over TLS/REALITY tcp |
+| rejected | plugins, UoT, stream ciphers | REALITY, fp, aid≠0, insecure | encryption≠none, other transports/flows, insecure, duplicate/conflicting query params |
+
+VLESS notes (pinned core `v26.10.21`):
+
+- REALITY client fields: `sni`/`serverName` (aliases, both set = reject),
+  `pbk` (required 32-byte X25519 base64url), `sid` (hex, ≤16 chars, empty ok),
+  `spx` (must start with `/`), `fp` (utls preset, default `chrome`;
+  `unsafe`/`hellogolang` are rejected like the core does).
+- The pinned core's REALITY client takes its ALPN from the utls fingerprint
+  only (no ALPN field in `reality.Config`), so `alpn` together with
+  `security=reality` is rejected instead of silently ignored. Plain TLS
+  accepts and emits `fp` and `alpn`.
+- REALITY over ws is rejected (core builds REALITY over RAW only).
+- Vision flow requires tcp + TLS/REALITY; ws or security=none with flow is
+  rejected. `xtls` (legacy) security is rejected.
+- `Profile.security()` returns `reality` / `tls` / `none` so the UI can show
+  REALITY distinctly from TLS.
 
 ## Pinned dependency
 
@@ -45,9 +72,21 @@ generated AAR are not committed.
 cd libs/xray && go test ./...
 ```
 
-The loopback tests start a local Xray server (Shadowsocks / VMess-WebSocket) and
-an echo server in-process, then push bytes through the session's SOCKS inbound.
-No external account or network access is needed.
+The loopback tests start a local Xray server (Shadowsocks / VMess-WebSocket /
+VLESS tcp & ws / VLESS-REALITY with a self-signed TLS 1.3 camouflage target)
+and an echo server in-process, then push bytes through the session's SOCKS
+inbound — real data exchange, not just core startup. The REALITY suite also
+covers the negative case: a wrong `pbk` must fail closed (probe forwarded to
+the camouflage target, no echo). No external account or network access is
+needed.
+
+Focused runs:
+
+```bash
+cd libs/xray
+go test -run VLESS ./...        # parsing + config + loopback integration
+go test -v -run TestSessionVLESSREALITYVision .   # REALITY + vision echo
+```
 
 ## License
 
@@ -80,3 +119,16 @@ confirm the loopback port disappears (`adb shell cat /proc/net/tcp`), force-stop
 and cold-start to confirm recovery, then point the node at a dead server and
 confirm the app stays on "connecting via proxy" (traffic must never fall back
 to direct).
+
+Manual REALITY entry points (needs a real server — the pinned core's REALITY
+client also negotiates X25519MLKEM768, which offline tests exercise only via
+the in-process loopback):
+
+1. Paste a `vless://...security=reality...` link into nnn 设置 → 代理 → add
+   Xray proxy. The parsed summary must show protocol `VLESS` and transport
+   `tcp + REALITY` (never `+ TLS`).
+2. Connect against a REALITY server with `flow=xtls-rprx-vision` and confirm
+   messages load; a wrong/rotated `pbk` must show "connecting via proxy"
+   (fail-closed), never direct traffic.
+3. A `security=reality` link carrying `alpn=` must be rejected with the
+   standard "not a supported link" error, not silently accepted.

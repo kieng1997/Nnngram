@@ -2,12 +2,15 @@ package xraybridge
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/xtls/xray-core/transport/internet/tls"
 )
 
 const (
@@ -32,23 +35,32 @@ var (
 	errReality      = errors.New("xraybridge: reality/xtls is not supported")
 	errBadMethod    = errors.New("xraybridge: unsupported shadowsocks method")
 	errBadPassword  = errors.New("xraybridge: invalid shadowsocks password")
+	errBadFlow      = errors.New("xraybridge: unsupported vless flow")
+	errBadParam     = errors.New("xraybridge: invalid vless parameter")
+	errBadPairing   = errors.New("xraybridge: conflicting vless parameters")
 )
 
 // Profile is a parsed share link. Every accessor is read-only.
 type Profile struct {
-	protocol  string // "shadowsocks" or "vmess"
-	address   string
-	port      int
-	method    string // shadowsocks cipher, empty for vmess
-	password  string
-	uuid      string
-	security  string // vmess scy
-	transport string // "tcp" or "ws"
-	tls       bool
-	sni       string
-	host      string // ws Host header
-	path      string // ws path
-	alpn      []string
+	protocol    string // "shadowsocks", "vmess" or "vless"
+	address     string
+	port        int
+	method      string // shadowsocks cipher, empty for vmess/vless
+	password    string
+	uuid        string
+	security    string // vmess scy
+	transport   string // "tcp" or "ws"
+	tls         bool   // TLS (vmess/vless); VLESS REALITY uses reality instead
+	reality     bool   // VLESS REALITY
+	sni         string
+	host        string // ws Host header
+	path        string // ws path
+	alpn        []string
+	flow        string // vless flow
+	fingerprint string // utls fingerprint (REALITY)
+	publicKey   string // REALITY public key
+	shortID     string // REALITY short id (may be empty)
+	spiderX     string // REALITY spiderX
 }
 
 func (p *Profile) Protocol() string  { return p.protocol }
@@ -57,7 +69,20 @@ func (p *Profile) Port() int         { return p.port }
 func (p *Profile) Transport() string { return p.transport }
 func (p *Profile) TLS() bool         { return p.tls }
 
-// Parse accepts ss:// (SIP002 and legacy base64) and vmess:// (base64 JSON) links.
+// Security classifies the stream security for display: "reality", "tls" or
+// "none". REALITY is deliberately distinct from TLS.
+func (p *Profile) Security() string {
+	if p.reality {
+		return "reality"
+	}
+	if p.tls {
+		return "tls"
+	}
+	return "none"
+}
+
+// Parse accepts ss:// (SIP002 and legacy base64), vmess:// (base64 JSON) and
+// vless:// links.
 // Error values never contain the input link, credentials or UUID.
 func Parse(link string) (*Profile, error) {
 	if len(link) > maxLinkLen {
@@ -69,6 +94,8 @@ func Parse(link string) (*Profile, error) {
 		return parseSS(link)
 	case strings.HasPrefix(link, "vmess://"):
 		return parseVMess(link)
+	case strings.HasPrefix(link, "vless://"):
+		return parseVLESS(link)
 	default:
 		return nil, errUnsupported
 	}
@@ -360,6 +387,232 @@ func parseVMess(link string) (*Profile, error) {
 		p.sni = p.host
 	}
 	return p, nil
+}
+
+// parseVLESS parses vless://uuid@host:port?...#name links. Unsupported
+// combinations are rejected rather than silently degraded.
+func parseVLESS(link string) (*Profile, error) {
+	u, err := url.Parse(link)
+	if err != nil || u.Scheme != "vless" {
+		return nil, errInvalidLink
+	}
+
+	uuid := strings.ToLower(u.User.Username())
+	if u.User.Username() == "" || u.User.String() != u.User.Username() {
+		// Reject any password part or percent-encoding in the user info.
+		return nil, errBadUUID
+	}
+	if !validUUID(uuid) {
+		return nil, errBadUUID
+	}
+
+	host, port, err := splitHostPort(u.Host)
+	if err != nil {
+		return nil, err
+	}
+	// Only a single trailing root path is tolerated, mirroring parseSS.
+	if p := u.Path; p != "" && p != "/" {
+		return nil, errUnsupported
+	}
+
+	q, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return nil, errInvalidLink
+	}
+	get := func(k string) string {
+		v := q.Get(k)
+		return strings.TrimSpace(v)
+	}
+	// Duplicates of security-sensitive parameters are rejected, not folded.
+	for _, k := range []string{"type", "security", "flow", "fp", "pbk", "sid", "spx", "sni", "serverName", "host", "path", "alpn", "encryption", "headerType", "allowInsecure", "insecure"} {
+		if vs, ok := q[k]; ok && len(vs) != 1 {
+			return nil, errBadPairing
+		}
+	}
+	// sni and serverName are aliases; setting both is conflicting.
+	sniParam := get("sni")
+	if v := get("serverName"); v != "" {
+		if sniParam != "" {
+			return nil, errBadPairing
+		}
+		sniParam = v
+	}
+
+	encryption := get("encryption")
+	switch encryption {
+	case "", "none":
+	default:
+		return nil, errBadSecurity
+	}
+
+	netw := strings.ToLower(get("type"))
+	switch netw {
+	case "", "tcp", "raw":
+		netw = "tcp"
+	case "ws":
+		netw = "ws"
+	default:
+		return nil, errBadTransport
+	}
+
+	header := strings.ToLower(get("headerType"))
+	if header != "" && header != "none" {
+		return nil, errBadHeader
+	}
+
+	sec := strings.ToLower(get("security"))
+	switch sec {
+	case "", "none":
+		sec = "none"
+	case "tls":
+	case "reality":
+	default:
+		return nil, errReality
+	}
+	if netw == "ws" && sec == "reality" {
+		// Core builds REALITY only over RAW.
+		return nil, errBadPairing
+	}
+	if sec != "reality" {
+		for _, k := range []string{"pbk", "sid", "spx"} {
+			if q.Has(k) {
+				// An empty value is meaningful for sid only; anything set
+				// outside REALITY is a conflicting parameter.
+				if k != "sid" || get(k) != "" {
+					return nil, errBadPairing
+				}
+			}
+		}
+	}
+
+	flow := get("flow")
+	if flow != "" {
+		// The pinned core accepts XRV and XRV-udp443; vision requires a
+		// direct RAW security layer.
+		if flow != "xtls-rprx-vision" && flow != "xtls-rprx-vision-udp443" {
+			return nil, errBadFlow
+		}
+		if netw != "tcp" || (sec != "reality" && sec != "tls") {
+			return nil, errBadPairing
+		}
+	}
+
+	insecure, err := insecureParam(get("allowInsecure"), get("insecure"))
+	if err != nil {
+		return nil, err
+	}
+	if insecure {
+		return nil, errInsecure
+	}
+
+	p := &Profile{
+		protocol:  "vless",
+		address:   host,
+		port:      port,
+		uuid:      uuid,
+		transport: netw,
+		flow:      flow,
+	}
+	if p.transport == "ws" {
+		p.host = get("host")
+		p.path = get("path")
+		if p.path == "" {
+			p.path = "/"
+		}
+		if p.host != "" && !validHost(p.host) {
+			return nil, errBadHost
+		}
+	}
+
+	switch sec {
+	case "tls":
+		p.tls = true
+		p.sni = sniParam
+		if p.sni == "" {
+			p.sni = p.host
+		}
+		// Plain TLS also accepts a fingerprint; it is honoured, not dropped.
+		if fp := get("fp"); fp != "" {
+			if tls.GetFingerprint(fp) == nil {
+				return nil, errBadParam
+			}
+			p.fingerprint = strings.ToLower(fp)
+		}
+	case "reality":
+		p.reality = true
+		p.sni = sniParam
+		if p.sni == "" {
+			p.sni = p.host
+		}
+		pbk := get("pbk")
+		if pbk == "" {
+			return nil, errBadParam
+		}
+		pub, derr := base64.RawURLEncoding.DecodeString(pbk)
+		if derr != nil || len(pub) != 32 {
+			return nil, errBadParam
+		}
+		p.publicKey = pbk
+		p.shortID = get("sid")
+		if p.shortID != "" {
+			if len(p.shortID) > 16 {
+				return nil, errBadParam
+			}
+			if _, derr := hex.DecodeString(p.shortID); derr != nil {
+				return nil, errBadParam
+			}
+		}
+		p.spiderX = get("spx")
+		if p.spiderX != "" && p.spiderX[0] != '/' {
+			return nil, errBadParam
+		}
+		p.fingerprint = get("fp")
+		if p.fingerprint == "" {
+			p.fingerprint = "chrome"
+		}
+		// The pinned core rejects these before the preset lookup
+		// (infra/conf REALITYConfig.Build); mirror that so a config the
+		// core would refuse at startup never passes parsing.
+		switch strings.ToLower(p.fingerprint) {
+		case "unsafe", "hellogolang":
+			return nil, errBadParam
+		}
+		if tls.GetFingerprint(p.fingerprint) == nil {
+			return nil, errBadParam
+		}
+		// The pinned core's REALITY client takes its ALPN from the utls
+		// fingerprint only; an explicit alpn would be silently ignored.
+		if q.Has("alpn") {
+			return nil, errBadPairing
+		}
+	}
+
+	if v := get("alpn"); v != "" {
+		for _, a := range strings.Split(v, ",") {
+			if a = strings.TrimSpace(a); a != "" {
+				p.alpn = append(p.alpn, a)
+			}
+		}
+	}
+	return p, nil
+}
+
+// insecureParam interprets allowInsecure/insecure. Any truthy spelling of
+// either parameter fails closed.
+func insecureParam(vals ...string) (bool, error) {
+	for _, v := range vals {
+		if v == "" {
+			continue
+		}
+		switch strings.ToLower(v) {
+		case "0", "false", "no":
+		case "1", "true", "yes":
+			return true, nil
+		default:
+			return false, errInsecure
+		}
+	}
+	return false, nil
 }
 
 // aidIsAbsent reports whether alterId was omitted or left empty. AEAD-only
