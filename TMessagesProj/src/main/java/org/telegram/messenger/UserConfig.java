@@ -33,7 +33,6 @@ import org.telegram.tgnet.tl.TL_account;
 import java.util.Arrays;
 
 import xyz.nextalone.nnngram.helpers.PasscodeHelper;
-import xyz.nextalone.nnngram.utils.AnalyticsUtils;
 
 public class UserConfig extends BaseController {
 
@@ -236,7 +235,6 @@ public class UserConfig extends BaseController {
                     }
 
                     if (currentUser != null) {
-                        AnalyticsUtils.setUserId(currentUser.id);
                         if (withFile) {
                             SerializedData data = new SerializedData();
                             currentUser.serializeToStream(data);
@@ -289,7 +287,6 @@ public class UserConfig extends BaseController {
             TLRPC.User oldUser = currentUser;
             currentUser = user;
             clientUserId = user.id;
-            AnalyticsUtils.setUserId(clientUserId);
             checkPremiumSelf(oldUser, user);
         }
     }
@@ -401,7 +398,6 @@ public class UserConfig extends BaseController {
             if (currentUser != null) {
                 checkPremiumSelf(null, currentUser);
                 clientUserId = currentUser.id;
-                AnalyticsUtils.setUserId(clientUserId);
             }
             configLoaded = true;
         }

@@ -21,7 +21,6 @@
 
 import com.android.build.api.variant.FilterConfiguration
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
-import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.io.FileInputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -32,8 +31,6 @@ import org.telegram.tasks.localization.GenerateLocalizationUtilsJavaTask
 plugins {
     id("com.android.application")
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.firebase.crashlytics)
-    alias(libs.plugins.google.services)
     alias(libs.plugins.triplet.play)
     alias(libs.plugins.aboutlibraries)
     alias(libs.plugins.serialization)
@@ -45,7 +42,6 @@ plugins {
 
 configurations {
     all {
-        exclude(group = "com.google.firebase", module = "firebase-core")
         exclude(group = "androidx.recyclerview", module = "recyclerview")
     }
 }
@@ -76,9 +72,6 @@ val nnngramBuildArgs: String = localProperties.getProperty("NNNGRAM_BUILD_ARGS")
 //}
 
 dependencies {
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.crashlytics.ndk)
-
     implementation(libs.core.ktx)
     implementation(libs.palette.ktx)
     implementation(libs.exifinterface)
@@ -91,8 +84,6 @@ dependencies {
 
     compileOnly(libs.checker.compat.qual)
     compileOnly(libs.checker.qual)
-    implementation(libs.firebase.messaging)
-    implementation(libs.firebase.config)
     implementation(libs.play.services.vision)
     implementation(libs.play.services.wearable)
     implementation(libs.play.services.location)
@@ -210,8 +201,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(File(projectDir, "proguard-rules.pro"))
-
-            the<CrashlyticsExtension>().nativeSymbolUploadEnabled = true
         }
 
         getByName("debug") {

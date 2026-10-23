@@ -54,7 +54,6 @@ import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
 import xyz.nextalone.nnngram.CrashListener;
-import xyz.nextalone.nnngram.utils.AnalyticsUtils;
 public class ApplicationLoader extends Application {
 
     public static ApplicationLoader applicationLoaderInstance;
@@ -253,14 +252,12 @@ public class ApplicationLoader extends Application {
 
         SharedConfig.loadConfig();
         SharedPrefsHelper.init(applicationContext);
+        // Push is not available in this build (no Firebase SDK): report the truthful status.
+        SharedConfig.pushStringStatus = "__NO_GOOGLE_PLAY_SERVICES__";
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             UserConfig.getInstance(a).loadConfig();
             MessagesController.getInstance(a);
-            if (a == 0) {
-                SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + ConnectionsManager.getInstance(a).getCurrentTime() + "__";
-            } else {
-                ConnectionsManager.getInstance(a);
-            }
+            ConnectionsManager.getInstance(a);
             TLRPC.User user = UserConfig.getInstance(a).getCurrentUser();
             if (user != null) {
                 MessagesController.getInstance(a).putUser(user, true);
@@ -281,7 +278,6 @@ public class ApplicationLoader extends Application {
         }
         BillingController.getInstance().startConnection();
 
-        AnalyticsUtils.start(applicationLoaderInstance);
         CrashListener.INSTANCE.init();
 
     }
@@ -611,27 +607,11 @@ public class ApplicationLoader extends Application {
         return result;
     }
 
-    public static void startAppCenter(Activity context) {
-        applicationLoaderInstance.startAppCenterInternal(context);
-    }
-
     public static void checkForUpdates() {
         applicationLoaderInstance.checkForUpdatesInternal();
     }
 
-    public static void appCenterLog(Throwable e) {
-        applicationLoaderInstance.appCenterLogInternal(e);
-    }
-
-    protected void appCenterLogInternal(Throwable e) {
-
-    }
-
     protected void checkForUpdatesInternal() {
-
-    }
-
-    protected void startAppCenterInternal(Activity context) {
 
     }
 

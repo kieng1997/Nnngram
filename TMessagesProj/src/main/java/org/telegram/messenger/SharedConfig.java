@@ -721,7 +721,6 @@ public class SharedConfig {
                 editor.putBoolean("useFingerprint", useFingerprintLock);
                 editor.putBoolean("walletUseFingerprintLock", walletUseFingerprintLock);
                 editor.putBoolean("allowScreenCapture", allowScreenCapture);
-                editor.putString("pushString2", pushString);
                 editor.putInt("pushType", pushType);
                 editor.putBoolean("pushStatSent", pushStatSent);
                 editor.putString("pushAuthKey", pushAuthKey != null ? Base64.encodeToString(pushAuthKey, Base64.DEFAULT) : "");
@@ -785,7 +784,9 @@ public class SharedConfig {
             walletUseFingerprintLock = preferences.getBoolean("walletUseFingerprintLock", true);
             allowScreenCapture = preferences.getBoolean("allowScreenCapture", false);
             lastLocalId = preferences.getInt("lastLocalId", -210000);
-            pushString = preferences.getString("pushString2", "");
+            // Push is disabled in this build (no Firebase SDK). Drop any legacy FCM token so it is
+            // never re-registered with the server after an upgrade.
+            preferences.edit().remove("pushString2").apply();
             pushType = preferences.getInt("pushType", PushListenerController.PUSH_TYPE_FIREBASE);
             pushStatSent = preferences.getBoolean("pushStatSent", false);
             passportConfigJson = preferences.getString("passportConfigJson", "");

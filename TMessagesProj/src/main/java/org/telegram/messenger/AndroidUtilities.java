@@ -241,7 +241,6 @@ import me.vkryl.core.BitwiseUtils;
 
 import xyz.nextalone.gen.Config;
 import xyz.nextalone.nnngram.utils.AlertUtil;
-import xyz.nextalone.nnngram.utils.AnalyticsUtils;
 import xyz.nextalone.nnngram.utils.TypefaceUtils;
 
 public class AndroidUtilities {
@@ -967,7 +966,6 @@ public class AndroidUtilities {
         } catch (Exception e) {
 
         }
-        ApplicationLoader.appCenterLog(new RuntimeException("can't create logs directory"));
         return null;
     }
 
@@ -3603,10 +3601,6 @@ public class AndroidUtilities {
             window.clearFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
         }
     }*/
-
-    public static void appCenterLog(Throwable e) {
-        AnalyticsUtils.trackCrashes(e);
-    }
 
     public static boolean shouldShowClipboardToast() {
         return (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !OneUIUtilities.hasBuiltInClipboardToasts()) && Build.VERSION.SDK_INT < 32;

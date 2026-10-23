@@ -728,13 +728,6 @@
 <!--            android:exported="false" />-->
         <service android:name=".FilesMigrationService" android:foregroundServiceType="dataSync" android:exported="false"/>
 
-        <service
-            android:name=".GcmPushListenerService" android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
         <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyCGMAA5lSWvRAgaVtF1-Bh3Di07zePnUbA" />
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
@@ -771,8 +764,6 @@
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
             android:value="org.telegram.messenger.chromecast.ChromecastOptionsProvider" />
-
-        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/notification" />
 
         <property
             android:name="miui.continuity.policy"

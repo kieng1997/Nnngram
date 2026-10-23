@@ -10,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -109,7 +111,12 @@ public class GoogleLocationProvider implements ILocationServiceProvider {
 
     @Override
     public boolean checkServices() {
-        return PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
+        try {
+            return GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ApplicationLoader.applicationContext) == ConnectionResult.SUCCESS;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return false;
+        }
     }
 
     public final static class GoogleLocationRequest implements ILocationRequest {

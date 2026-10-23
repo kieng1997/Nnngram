@@ -44,9 +44,7 @@ You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android 
 2. Download the ccache from [here](https://ccache.dev/) and make sure it is in your `PATH`.
 3. Replace release.keystore in TMessagesProj/config with your own one.
 4. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your release.keystore
-5.  Go to https://console.firebase.google.com/, create one android app with application ID `top.qwq2333.nullgram`, turn on firebase messaging and download google-services.json, 
-    which should be copied to the same folder as TMessagesProj.
-6. Open your terminal and run `./gradlew assembleRelease` to build the APK
+5. Open your terminal and run `./gradlew assembleRelease` to build the APK
 
 ## Sponsor
 

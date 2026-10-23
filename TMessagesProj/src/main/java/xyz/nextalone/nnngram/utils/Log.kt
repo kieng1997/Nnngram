@@ -22,7 +22,6 @@ package xyz.nextalone.nnngram.utils
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -165,7 +164,6 @@ object Log {
     fun w(tag: String, msg: String) {
         Log.w(TAG, "$tag: $msg")
         writeToFile(Level.WARN, tag, msg)
-        FirebaseCrashlytics.getInstance().log("$tag: $msg")
     }
 
     /**
@@ -176,7 +174,6 @@ object Log {
     fun e(tag: String, msg: String) {
         Log.e(TAG, "$tag: $msg")
         writeToFile(Level.ERROR, tag, msg)
-        FirebaseCrashlytics.getInstance().log("$tag: $msg")
     }
 
     /**
@@ -231,7 +228,6 @@ object Log {
         writeToFile(Level.ERROR, null, msg)
         if (throwable != null) {
             writeToFile(Level.ERROR, null, throwable.stackTraceToString())
-            AnalyticsUtils.trackCrashes(throwable)
         }
     }
 
@@ -239,7 +235,6 @@ object Log {
     fun fatal(throwable: Throwable?) {
         if (throwable != null) {
             writeToFile(Level.FATAL, null, throwable.stackTraceToString())
-            AnalyticsUtils.trackCrashes(throwable)
         }
     }
 
@@ -278,7 +273,6 @@ object Log {
     fun w(throwable: Throwable) {
         Log.w(TAG, "", throwable)
         writeToFile(Level.WARN, null, throwable.stackTraceToString())
-        AnalyticsUtils.trackCrashes(throwable)
 
     }
 
@@ -290,7 +284,6 @@ object Log {
     fun e(throwable: Throwable) {
         Log.e(TAG, "", throwable)
         writeToFile(Level.ERROR, null, throwable.stackTraceToString())
-        AnalyticsUtils.trackCrashes(throwable)
     }
 
     private const val ENABLE_NATIVE_LOG = true
