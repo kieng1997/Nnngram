@@ -13,6 +13,7 @@ import android.text.TextUtils;
 import android.util.Base64;
 
 import androidx.annotation.Keep;
+import androidx.annotation.Nullable;
 
 import androidx.annotation.OptIn;
 import androidx.media3.common.util.UnstableApi;
@@ -79,6 +80,8 @@ import xyz.nextalone.gen.Config;
 import xyz.nextalone.nnngram.InlinesKt;
 import xyz.nextalone.nnngram.helpers.ConnectionsHelper;
 import xyz.nextalone.nnngram.helpers.WebSocketHelper;
+import xyz.nextalone.nnngram.helpers.XrayEndpoint;
+import xyz.nextalone.nnngram.helpers.XrayProxyHelper;
 import xyz.nextalone.nnngram.utils.DatabaseUtils;
 import xyz.nextalone.nnngram.utils.Log;
 import xyz.nextalone.nnngram.utils.Utils;
@@ -674,19 +677,18 @@ public class ConnectionsManager extends BaseController {
 
     public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection) {
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        final ProxySettings proxySettings = ProxySettings.fromSharedPreferences(preferences);
-        if (preferences.getBoolean("proxy_enabled", false) && proxySettings.isValid()) {
-            Log.d("proxy address: " + proxySettings.getAddress());
-            if (proxySettings.getType() == ProxySettings.Type.WEB) {
-                int localPort = WebProxyTransport.start(proxySettings.getAddress(), proxySettings.getSecret());
-                native_setProxySettings(currentAccount, "127.0.0.1", localPort != 0 ? localPort : 9, "", "",
-                        proxySettings.getSecret());
-            } else if (WebSocketHelper.proxyServer.equals(proxySettings.getAddress())) {
-                native_setProxySettings(currentAccount, "127.0.0.1", WebSocketHelper.getSocksPort(), "", "", "");
-            } else {
-                native_setProxySettings(currentAccount, proxySettings.getAddress(), proxySettings.getPort(),
-                        proxySettings.getUser(), proxySettings.getPassword(), proxySettings.getSecret());
+        synchronized (proxySettingsLock) {
+            // Read, decide and push under one lock. The prefs file seeds the
+            // desired intent exactly once: later inits (accounts are created
+            // lazily, possibly after the UI is up) reuse the current intent, so
+            // a stale prefs value can never overwrite a switch the user already
+            // made. Cold starts never retry a failed start.
+            if (!desiredInitialized) {
+                setDesiredLocked(
+                        preferences.getBoolean("proxy_enabled", false),
+                        ProxySettings.fromSharedPreferences(preferences));
             }
+            pushProxyLocked(1, currentAccount, desiredEnabled, desiredSettings, false);
         }
         String installer = "";
         try {
@@ -720,6 +722,14 @@ public class ConnectionsManager extends BaseController {
 
         native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, userPremium, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
         checkConnection();
+        // The core may have finished starting before this point (the constructor
+        // is not guaranteed to run on the UI thread), in which case the earlier
+        // placeholder was overwritten. Re-apply against the CURRENT desired
+        // intent under the lock - never against the snapshot read above, which
+        // a concurrent switch may already have replaced.
+        synchronized (proxySettingsLock) {
+            applyXrayLocked(null);
+        }
     }
 
     public static void setLangCode(String langCode) {
@@ -780,6 +790,21 @@ public class ConnectionsManager extends BaseController {
     }
 
     public long checkProxy(ProxySettings settings, RequestTimeDelegate requestTimeDelegate) {
+        if (settings != null && settings.getType() == ProxySettings.Type.XRAY) {
+            if (!settings.isValid()) {
+                if (requestTimeDelegate != null) {
+                    requestTimeDelegate.run(-1);
+                }
+                return 0;
+            }
+            // Always checked through a throwaway probe session: it never touches
+            // the active session, and a foreign or broken node can never report
+            // a cached success (every path ends in -1 or a real ping).
+            final int account = currentAccount;
+            XrayProxyHelper.probe(settings, (endpoint, result) ->
+                    native_checkProxy(account, "127.0.0.1", endpoint.port, endpoint.username, endpoint.password, "", result), requestTimeDelegate);
+            return 0;
+        }
         if (settings == null || !settings.isValid()) {
             return 0;
         }
@@ -1002,14 +1027,78 @@ public class ConnectionsManager extends BaseController {
         KeepAliveJob.startJob();
     }
 
+    /**
+     * Serialises every decision that selects the proxy and pushes it to the
+     * native layer: the constructor's initial read, user/rotation switches and
+     * the async "Xray is listening" re-apply. Held only around field reads and
+     * {@code native_setProxySettings}; never around Go calls, {@code getInstance}
+     * or the promo check, so it cannot invert against CM/AccountInstance locks.
+     */
+    private static final Object proxySettingsLock = new Object();
+
+    /**
+     * The desired proxy in memory. The editor commit can lag behind the push
+     * (ProxySettingsActivity saves settings first and commits afterwards), so
+     * the prefs file is not an authority for which decision is newest; the
+     * intent lives here, guarded by the same lock.
+     */
+    private static boolean desiredEnabled;
+    private static ProxySettings desiredSettings;
+
+    /**
+     * Whether the desired intent has been initialized at all. Prefs are read
+     * exactly once, on the first init or the first runtime switch; later
+     * inits reuse the current intent, so a lazily created account can never
+     * resurrect the pre-switch settings. {@code desiredSettings == null} is a
+     * valid explicit "proxy disabled" intent and must not be used as this flag.
+     */
+    private static boolean desiredInitialized;
+
+    /** Must be called while holding {@link #proxySettingsLock}. */
+    private static void setDesiredLocked(boolean enabled, ProxySettings settings) {
+        desiredEnabled = enabled;
+        desiredSettings = settings;
+        desiredInitialized = true;
+    }
+
     public static void setProxySettings(boolean enabled, ProxySettings settings) {
+        synchronized (proxySettingsLock) {
+            // A runtime switch is always an explicit user decision: it wins over
+            // the one-shot prefs read and may retry a failed start.
+            setDesiredLocked(enabled, settings);
+            pushProxyLocked(UserConfig.MAX_ACCOUNT_COUNT, 0, enabled, settings, true);
+        }
+        notifyProxyChanged();
+    }
+
+    /**
+     * Must be called while holding {@link #proxySettingsLock}. Resolves the
+     * effective native endpoint for {@code settings} and applies it to
+     * {@code accounts} accounts starting at {@code firstAccount}: one for the
+     * cold-start constructor (each account initialises itself), all of them for
+     * a runtime switch.
+     */
+    private static void pushProxyLocked(int accounts, int firstAccount, boolean enabled, ProxySettings settings, boolean retryAfterFailure) {
         String address = "";
         int port = 0;
         String username = "";
         String password = "";
         String secret = "";
+        final boolean xray = enabled && settings != null && settings.getType() == ProxySettings.Type.XRAY;
 
-        if (enabled && settings != null && settings.isValid()) {
+        if (xray) {
+            // Fail-closed: an unusable Xray link still gets a loopback address so
+            // Telegram never falls back to a direct connection. Only a runtime
+            // (explicit user) selection retries a failed start; a cold start
+            // leaves it failed instead of re-attempting it behind the user's
+            // back.
+            final XrayEndpoint endpoint = XrayProxyHelper.ensureRunning(settings, retryAfterFailure);
+            address = "127.0.0.1";
+            port = endpoint.port;
+            username = endpoint.username;
+            password = endpoint.password;
+            WebProxyTransport.stop();
+        } else if (enabled && settings != null && settings.isValid()) {
             address = settings.getAddress();
             port = settings.getPort();
             username = settings.getUser();
@@ -1028,6 +1117,10 @@ public class ConnectionsManager extends BaseController {
         } else {
             WebProxyTransport.stop();
         }
+        if (!xray) {
+            // Switching away from Xray releases the local core.
+            XrayProxyHelper.stop();
+        }
         if (address.equals(WebSocketHelper.proxyServer)) {
             Log.d("using websocket proxy");
             address = "127.0.0.1";
@@ -1035,17 +1128,77 @@ public class ConnectionsManager extends BaseController {
             secret = "";
         }
 
-
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (enabled && settings != null && settings.isValid()) {
+        for (int i = 0; i < accounts; i++) {
+            int a = firstAccount + i;
+            if (xray) {
+                native_setProxySettings(a, address, port, username, password, "");
+            } else if (enabled && settings != null && settings.isValid()) {
                 native_setProxySettings(a, address, port, username, password, secret);
             } else {
                 native_setProxySettings(a, "", 1080, "", "", "");
             }
+        }
+    }
+
+    /** Promo re-check outside the proxy lock (touches MessagesController). */
+    private static void notifyProxyChanged() {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             AccountInstance accountInstance = AccountInstance.getInstance(a);
             if (accountInstance.getUserConfig().isClientActivated()) {
                 accountInstance.getMessagesController().checkPromoInfo(true);
             }
+        }
+    }
+
+    /** Runs a native proxy check against a prepared Xray loopback endpoint. */
+    public interface NativeCheck {
+        void run(XrayEndpoint endpoint, RequestTimeDelegate result);
+    }
+
+    /**
+     * Re-applies a finished Xray start to every account. Called from the helper
+     * once the loopback port is actually listening; a superseded target never
+     * reaches this point because the helper checks its version first.
+     */
+    public static void applyXrayEndpoint(ProxySettings started) {
+        synchronized (proxySettingsLock) {
+            applyXrayLocked(started == null ? null : started.getSecret());
+        }
+    }
+
+    /** Called by the helper once a core is listening; {@code link} is its target. */
+    public static void onXrayActiveReady(String link) {
+        synchronized (proxySettingsLock) {
+            applyXrayLocked(link);
+        }
+    }
+
+    /**
+     * Must be called while holding {@link #proxySettingsLock}.
+     *
+     * <p>Gates on the desired intent captured under this lock; the endpoint and
+     * the target are sampled together inside the helper, so a switch cannot land
+     * between the two reads.
+     */
+    private static void applyXrayLocked(@Nullable String expectedLink) {
+        // Gate on the in-memory desired intent, not the prefs file: the editor
+        // commits after the push (ProxySettingsActivity saves settings first and
+        // commits afterwards), so a mid-boot switch that has not committed yet
+        // would make the file look older than the decision already live. The
+        // async apply only lands while the desired intent is still the same
+        // Xray link; anything else has already pushed its own endpoint.
+        if (!desiredEnabled || desiredSettings == null || desiredSettings.getType() != ProxySettings.Type.XRAY) {
+            return;
+        }
+        if (expectedLink != null && !expectedLink.equals(desiredSettings.getSecret())) {
+            return;
+        }
+        final XrayEndpoint endpoint = XrayProxyHelper.endpointIfActive(desiredSettings);
+        if (!endpoint.isReady()) {
+            return;
+        }
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            native_setProxySettings(a, "127.0.0.1", endpoint.port, endpoint.username, endpoint.password, "");
         }
     }
 

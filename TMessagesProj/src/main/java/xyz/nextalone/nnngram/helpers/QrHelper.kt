@@ -63,10 +63,18 @@ import org.telegram.ui.Components.Bulletin
 import org.telegram.ui.Components.BulletinFactory
 import org.telegram.ui.Components.LayoutHelper
 import org.telegram.ui.Components.LinkSpanDrawable.LinksTextView
+import xyz.nextalone.nnngram.activity.XrayProxyActivity
 import xyz.nextalone.nnngram.utils.Log
 
 object QrHelper {
     private const val LOGIN_TOKEN_PREFIX = "tg://login?token="
+
+    @JvmStatic
+    fun isXrayLink(link: String?): Boolean {
+        if (link == null) return false
+        val trimmed = link.trim()
+        return trimmed.startsWith("ss://", ignoreCase = true) || trimmed.startsWith("vmess://", ignoreCase = true)
+    }
 
     @JvmStatic
     fun openCameraScanActivity(fragment: BaseFragment) {
@@ -77,6 +85,12 @@ object QrHelper {
 
             override fun didFindQr(link: String) {
                 if (!loginRequested) {
+                    // Shadowsocks / VMess links go straight to the Xray editor;
+                    // everything else keeps the previous browser behaviour.
+                    if (isXrayLink(link)) {
+                        fragment.presentFragment(XrayProxyActivity(link))
+                        return
+                    }
                     Browser.openUrl(fragment.parentActivity, link, true, false)
                     return
                 }
@@ -152,6 +166,10 @@ object QrHelper {
         }
         if (qrResults.size == 1) {
             val text = qrResults[0].text
+            if (isXrayLink(text)) {
+                fragment.presentFragment(XrayProxyActivity(text!!.trim()))
+                return
+            }
             if (text!!.startsWith("http://") || text.startsWith("https://")) {
                 AlertsCreator.showOpenUrlAlert(fragment, text, true, true, if (dark) null else resourcesProvider)
                 return

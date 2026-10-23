@@ -27,7 +27,9 @@ public final class ProxySettings {
     public enum Type {
         SOCKS5,
         MTPROTO,
-        WEB
+        WEB,
+        /** Shadowsocks / VMess handled by the bundled Xray-core. */
+        XRAY
     }
 
     private final @NonNull Type type;
@@ -56,6 +58,16 @@ public final class ProxySettings {
             port = builder.port;
             user = builder.user;
             password = builder.password;
+        } else if (type == Type.XRAY) {
+            // secret keeps the original share link (the Xray bridge parses it);
+            // address/port are only the parsed server for display. The link
+            // itself carries the remote credentials, exactly like an MTProto
+            // secret; only the generated loopback SOCKS credentials are never
+            // persisted.
+            secret = builder.secret;
+            port = builder.port;
+            user = "";
+            password = "";
         } else {
             throw new IllegalArgumentException();
         }
@@ -91,6 +103,13 @@ public final class ProxySettings {
     }
 
     public boolean isValid() {
+        if (type == Type.XRAY) {
+            // The share link is the whole configuration; the bridge re-parses it.
+            // A persisted entry stays "valid" as long as the link is present so a
+            // broken/unsupported link is handled by the fail-closed proxy path
+            // instead of silently falling back to a direct connection.
+            return !TextUtils.isEmpty(secret);
+        }
         if (TextUtils.isEmpty(address)) {
             return false;
         }
@@ -100,6 +119,9 @@ public final class ProxySettings {
     }
 
     public String getLink() {
+        if (type == Type.XRAY) {
+            return secret;
+        }
         StringBuilder url;
         switch (type) {
             case MTPROTO:
@@ -201,6 +223,15 @@ public final class ProxySettings {
                 }
                 break;
             case MTPROTO:
+                editor.putString("proxy_secret", secret);
+                editor.putInt("proxy_port", port);
+                editor.remove("proxy_pass");
+                editor.remove("proxy_user");
+                break;
+            case XRAY:
+                // Same shape as MTPROTO: link in secret, parsed server in
+                // address/port for display. The random loopback port and the
+                // generated SOCKS credentials are never persisted.
                 editor.putString("proxy_secret", secret);
                 editor.putInt("proxy_port", port);
                 editor.remove("proxy_pass");
@@ -362,6 +393,9 @@ public final class ProxySettings {
         }
 
         public ProxySettings build() {
+            if (type == Type.XRAY) {
+                secret = secret.trim();
+            }
             if (type == Type.WEB) {
                 address = normalizeWebAddress(address);
                 if (hasWebProxyPath(address)) {
@@ -523,6 +557,8 @@ public final class ProxySettings {
                 return 1;
             case WEB:
                 return 2;
+            case XRAY:
+                return 3;
         }
         return 0;
     }
@@ -535,6 +571,8 @@ public final class ProxySettings {
                 return Type.MTPROTO;
             case 2:
                 return Type.WEB;
+            case 3:
+                return Type.XRAY;
         }
         return Type.SOCKS5;
     }

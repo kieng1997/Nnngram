@@ -55,3 +55,28 @@ Xray-core is MPL-2.0. The full license text of the pinned version is at
 `libs/xray/licenses/xray-core-LICENSE.txt` and is copied into the app assets as
 `xray-core-LICENSE.txt`. Obtain the authoritative text for any other version
 from `https://github.com/XTLS/Xray-core/blob/<tag>/LICENSE`.
+
+## App-side manual verification (stage 3 entry points)
+
+App wiring lives in `TMessagesProj/src/main/java/xyz/nextalone/nnngram/helpers/`
+(`XraySessionController`, `XrayProxyHelper`). Before touching a device, run the
+deterministic JVM checks (no Android, no JUnit):
+
+```bash
+# lifecycle / race behaviour of the session controller (13 scenarios)
+javac -d /tmp/xc \
+  TMessagesProj/src/main/java/xyz/nextalone/nnngram/helpers/XrayEndpoint.java \
+  TMessagesProj/src/main/java/xyz/nextalone/nnngram/helpers/XraySessionController.java \
+  TMessagesProj/src/test/java/xyz/nextalone/nnngram/helpers/XraySessionControllerTest.java
+java -cp /tmp/xc xyz.nextalone.nnngram.helpers.XraySessionControllerTest
+
+# static wiring invariants (persistence, fail-closed, routing, i18n parity)
+javac -d /tmp/xw TMessagesProj/src/test/java/xyz/nextalone/nnngram/utils/XrayProxyWiringTest.java
+java -cp /tmp/xw xyz.nextalone.nnngram.utils.XrayProxyWiringTest .
+```
+
+On-device smoke: add an SS node, connect, disable, switch back to SOCKS5 and
+confirm the loopback port disappears (`adb shell cat /proc/net/tcp`), force-stop
+and cold-start to confirm recovery, then point the node at a dead server and
+confirm the app stays on "connecting via proxy" (traffic must never fall back
+to direct).

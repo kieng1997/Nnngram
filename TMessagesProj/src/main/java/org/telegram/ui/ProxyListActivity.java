@@ -78,6 +78,7 @@ import java.util.Collections;
 import java.util.List;
 
 import xyz.nextalone.nnngram.activity.WsSettingsActivity;
+import xyz.nextalone.nnngram.activity.XrayProxyActivity;
 import xyz.nextalone.nnngram.helpers.WebSocketHelper;
 
 public class ProxyListActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -186,7 +187,9 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
             checkImageView.setContentDescription(getString(R.string.Edit));
             addView(checkImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 8, 8, 8, 0));
             checkImageView.setOnClickListener(v -> {
-                if (WebSocketHelper.proxyServer.equals(currentInfo.settings.getAddress())) {
+                if (currentInfo.settings.getType() == ProxySettings.Type.XRAY) {
+                    presentFragment(new XrayProxyActivity(currentInfo));
+                } else if (WebSocketHelper.proxyServer.equals(currentInfo.settings.getAddress())) {
                     presentFragment(new WsSettingsActivity(currentInfo));
                 } else {
                     presentFragment(new ProxySettingsActivity(currentInfo));
@@ -208,7 +211,12 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         }
 
         public void setProxy(SharedConfig.ProxyInfo proxyInfo) {
-            if (WebSocketHelper.proxyServer.equals(proxyInfo.settings.getAddress())) {
+            if (proxyInfo.settings.getType() == ProxySettings.Type.XRAY) {
+                // Only the remote endpoint is shown: never the loopback port or
+                // anything derived from the share link.
+                textView.setText(proxyInfo.settings.getAddress() + ":" + proxyInfo.settings.getPort()
+                        + " (" + xrayLabel(proxyInfo.settings.getSecret()) + ")");
+            } else if (WebSocketHelper.proxyServer.equals(proxyInfo.settings.getAddress())) {
                 textView.setText(LocaleController.getString("PublicProxy", R.string.PublicProxy));
             } else {
                 textView.setText(proxyInfo.settings.getType() == ProxySettings.Type.WEB
@@ -216,6 +224,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                         : proxyInfo.settings.getAddress() + ":" + proxyInfo.settings.getPort());
             }
             currentInfo = proxyInfo;
+        }
+
+        private String xrayLabel(String link) {
+            return link != null && link.regionMatches(true, 0, "vmess://", 0, 8) ? "VMess" : "SS";
         }
 
         public void updateStatus() {
@@ -517,7 +529,22 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 }
                 ConnectionsManager.setProxySettings(useProxySettings, SharedConfig.currentProxy.settings);
             } else if (position == proxyAddRow) {
-                presentFragment(new ProxySettingsActivity());
+                if (getParentActivity() == null) {
+                    return;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(getString(R.string.AddProxy));
+                builder.setItems(new CharSequence[]{
+                        getString(R.string.XrayProxyAddLegacy),
+                        getString(R.string.XrayProxyTypeName)
+                }, (dialog, which) -> {
+                    if (which == 0) {
+                        presentFragment(new ProxySettingsActivity());
+                    } else {
+                        presentFragment(new XrayProxyActivity());
+                    }
+                });
+                showDialog(builder.create());
             } else if (position == deleteAllRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setMessage(getString(R.string.DeleteAllProxiesConfirm));
@@ -779,6 +806,11 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
 
             updateRows(false);
         } else if (id == NotificationCenter.proxySettingsChanged) {
+            // Re-read the enabled flag: this screen cached it in
+            // onFragmentCreate, so an add/editor screen that enabled a proxy
+            // would otherwise leave the switch stale (first tap would enable
+            // instead of disable).
+            useProxySettings = MessagesController.getGlobalMainSettings().getBoolean("proxy_enabled", false) && !SharedConfig.proxyList.isEmpty();
             updateRows(true);
         } else if (id == NotificationCenter.didUpdateConnectionState) {
             int state = ConnectionsManager.getInstance(account).getConnectionState();
