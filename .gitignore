@@ -20,3 +20,6 @@ libtmessages.*.so
 .DS_Store
 **/.DS_Store
 TMessagesProj/jni/ffmpeg/build_android
+
+# Xray bridge build outputs (AAR is produced by :TMessagesProj:buildXrayBridge)
+libs/xray/build/

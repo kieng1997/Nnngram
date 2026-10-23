@@ -47,11 +47,50 @@ configurations {
 }
 
 val abiName = mapOf("arm64-v8a" to "arm64")
+
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
+val XRAY_AAR = "libs/xray/build/xraybridge.aar"
+val GOMOBILE_MODULE = "golang.org/x/mobile/cmd/gomobile@v0.0.0-20261011034528-197770444867"
+
+// Builds the Xray-core bridge AAR with the pinned gomobile version. Invoked
+// through `go run` so no shell and no global tool install is required on either
+// Linux CI or Windows; libs/xray/build.sh is the equivalent manual entry point.
+val buildXrayBridge by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Builds the Xray-core bridge AAR with gomobile"
+    workingDir = rootProject.file("libs/xray")
+    commandLine(
+        "go", "run", GOMOBILE_MODULE, "bind",
+        "-target", "android/arm64",
+        "-androidapi", "27",
+        "-trimpath",
+        "-o", "build/xraybridge.aar",
+        "-ldflags=-checklinkname=0 -s -w -buildid= -extldflags=-Wl,-z,max-page-size=16384",
+        ".",
+    )
+    inputs.files(
+        rootProject.fileTree("libs/xray") {
+            include("**/*.go", "go.mod", "go.sum", "build.sh", "licenses/**")
+            exclude("build/**")
+        }
+    )
+    outputs.file(rootProject.layout.projectDirectory.file(XRAY_AAR))
+    // Empty values would wipe the inherited environment, so only forward real ones.
+    listOf("ANDROID_HOME", "ANDROID_NDK_HOME", "ANDROID_SDK_ROOT").forEach { key ->
+        System.getenv(key)?.takeIf { it.isNotBlank() }?.let { environment(key, it) }
+    }
+    // gomobile picks the NDK from ANDROID_NDK_HOME; mirror the app's pinned NDK.
+    if (System.getenv("ANDROID_NDK_HOME").isNullOrBlank()) {
+        System.getenv("ANDROID_HOME")?.takeIf { it.isNotBlank() }?.let {
+            environment("ANDROID_NDK_HOME", "$it/ndk/28.2.13676358")
+        }
+    }
+}
+
 val nnngramBuildArgs: String = localProperties.getProperty("NNNGRAM_BUILD_ARGS") ?: System.getenv("NNNGRAM_BUILD_ARGS") ?: ""
 
 //fun setupPlay(stable: Boolean) {
@@ -136,6 +175,10 @@ dependencies {
     implementation(project(":libs:tcp2ws"))
     implementation(project(":libs:pangu"))
     ksp(project(":libs:ksp"))
+
+    // Xray-core bridge: Go sources live in libs/xray, the AAR is produced by
+    // :TMessagesProj:buildXrayBridge (gomobile bind, arm64 only).
+    implementation(files(rootProject.layout.projectDirectory.file(XRAY_AAR)).builtBy(buildXrayBridge))
 
     api(project(":TMessagesProj_Modules:media3:media-lib-exoplayer"))
     api(project(":TMessagesProj_Modules:media3:media-lib-exoplayer-dash"))

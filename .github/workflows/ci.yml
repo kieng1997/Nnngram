@@ -51,6 +51,11 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - name: Setup Go (Xray-core bridge)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: libs/xray/go.mod
+          cache-dependency-path: libs/xray/go.sum
       - name: Prepare Environment
         run: |
             echo "Removing large packages"
@@ -71,7 +76,7 @@ jobs:
             sudo rm -rf /usr/local/lib/node_modules
             df -h
             sudo apt-get install bison gcc make curl ninja-build -y
-            echo "y" | sdkmanager --install "ndk;28.1.13356709" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+            echo "y" | sdkmanager --install "ndk;28.2.13676358" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
             echo "sdk.dir=${ANDROID_HOME}" >> local.properties
             export ANDROID_SDK=${ANDROID_HOME}
       - name: Debug Build

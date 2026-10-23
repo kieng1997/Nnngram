@@ -161,3 +161,10 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+# Xray-core bridge (gomobile). The generated classes call into libgojni.so by
+# name; AAR consumer rules normally cover this, kept explicit for R8 full mode.
+-keep class go.** { *; }
+-keep class xraybridge.** { *; }
+-keep class go.xraybridge.gojni.** { *; }
+-dontwarn go.**
