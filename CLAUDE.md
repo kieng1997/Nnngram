@@ -1,6 +1,6 @@
 # Nnngram — Project Guide
 
-Telegram Android fork。直接基于 **Telegram official Android client** (`DrKLO/Telegram` 上游)，跟随 upstream `master@official` tag 周期 merge；源码包名 `xyz.nextalone.nnngram`，安装包名 `applicationId=xyz.nextalone.nnngramx`（可与原版 Nnngram 并存）。
+Telegram Android fork。直接基于 **Telegram official Android client** (`DrKLO/Telegram` 上游)，跟随 upstream `master@official` tag 周期 merge；源码包名 `xyz.nextalone.nnngram`，安装包名由 `gradle.properties` 的 `NNN_APP_ID` 决定（默认 `xyz.nextalone.nnngramx`，可改成任意后缀实现多变体共存）。
 
 > 历史上 fork 链是 `Telegram → Nullgram → Nnngram`，但目前 **不再依赖 Nullgram 仓库**，所有 fork-only 代码在本仓库内独立维护，merge 只对接 upstream Telegram。
 
@@ -8,7 +8,8 @@ Telegram Android fork。直接基于 **Telegram official Android client** (`DrKL
 
 | 路径 | 角色 |
 |---|---|
-| `TMessagesProj/` | 主 module (APK 产物来源)。`namespace=org.telegram.messenger`, `applicationId=xyz.nextalone.nnngramx`（源码包仍为 `xyz.nextalone.nnngram`，仅安装身份不同） |
+| `TMessagesProj/` | 主 module (APK 产物来源)。`namespace=org.telegram.messenger`, `applicationId` 读 `NNN_APP_ID`（源码包仍为 `xyz.nextalone.nnngram`，仅安装身份不同） |
+| `TMessagesProj/identity/xml/` | 安装身份资源**模板**（accountType / 联系人 mime / auth_menu targetPackage），构建时按 `applicationId` 展开到 `build/generated/identityRes/` |
 | `TMessagesProj/src/main/java/org/telegram/**` | 上游代码 (merge 时尽量按 upstream，不主动改) |
 | `TMessagesProj/src/main/java/xyz/nextalone/nnngram/**` | fork-only Java/Kotlin |
 | `TMessagesProj/src/main/res/values{,-zh,-zh-rTW}/strings_nullgram.xml` | fork-only 字符串 (3 语言对齐) |
@@ -25,12 +26,42 @@ Telegram Android fork。直接基于 **Telegram official Android client** (`DrKL
 - Debug APK + 安装: `./gradlew :TMessagesProj:installDebug`
 - Debug APK (仅编译): `./gradlew :TMessagesProj:assembleDebug`
 - Release APK: `./gradlew :TMessagesProj:assembleRelease`
-- 产物: `TMessagesProj/build/outputs/apk/{debug,release}/Nnngram-v<ver>-<sha>-<abi>.apk`
-- 卸载: `adb uninstall xyz.nextalone.nnngramx`
-- 启动: `adb shell monkey -p xyz.nextalone.nnngramx -c android.intent.category.LAUNCHER 1`
+- 产物: `TMessagesProj/build/outputs/apk/{debug,release}/<AppLabel>-<ver>-<abi>.apk`（`AppLabel` 随包名后缀变化）
+- 卸载: `adb uninstall <NNN_APP_ID>`（默认 `xyz.nextalone.nnngramx`）
+- 启动: `adb shell monkey -p <NNN_APP_ID> -c android.intent.category.LAUNCHER 1`
 - 清理: `./gradlew clean`
 - Lint: `./gradlew :TMessagesProj:lintDebug`
 - 任务列表: `./gradlew :TMessagesProj:tasks`
+
+## 安装身份 (多变体共存)
+
+`gradle.properties` 的 `NNN_APP_ID` 是安装包名的唯一来源：
+
+```properties
+NNN_APP_ID=xyz.nextalone.nnngramx   # 默认；桌面名 NnngramX
+```
+
+改成 `xyz.nextalone.nnngrama` / `...b` / `...c` 即可产出与其它变体共存的 APK，也可临时覆盖：
+
+```bash
+./gradlew :TMessagesProj:assembleRelease -PNNN_APP_ID=xyz.nextalone.nnngrama
+```
+
+桌面名自动跟随后缀：`nnngramx`(或无后缀) → `NnngramX`，`nnngrama` → `NnngramX-a`。
+
+以下标识**自动**由 `applicationId` 派生，无需改动：provider authorities、FileProvider、call mime filter、taskAffinity、`BuildConfig.APPLICATION_ID`、联系人账号类型与 mime（`ApplicationLoader.getApplicationId()`）、升级广播匹配、`/data/data/<pkg>` 回退路径。
+
+以下**不**支持 manifest 占位符，改包名时必须走模板（`TMessagesProj/identity/xml/*.xml` → `GenerateIdentityResTask` 生成到 `build/generated/identityRes/`）：
+
+| 文件 | 字段 |
+|---|---|
+| `auth.xml` | `accountType`、`label` |
+| `auth_menu.xml` | `targetPackage` |
+| `contacts.xml` | 3 个 `mimeType` |
+| `sync_contacts.xml` | `accountType` |
+
+桌面名走生成的 `@string/NnnAppLabel`（`translatable="false"`，不入本地化资产管线），不再使用写死的 `NullgramName`。注意 `NnnAppLabel` 只存在于资源里，**不能**用 `LocaleController.getString("<key>", ...)` 按名字查（那走的是本地化资产，会返回 `LOC_ERR`）；要拿显示名请用 `LocaleController.getString("AppName", R.string.AppName)`，它已被 override 成该标签。
+回归测试：`TMessagesProj/src/test/java/xyz/nextalone/nnngram/utils/PackageIdentityTest.java`。
 
 ## 版本
 `gradle.properties` 是 single source of truth：

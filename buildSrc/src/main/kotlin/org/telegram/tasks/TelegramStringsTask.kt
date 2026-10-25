@@ -25,12 +25,10 @@ import java.nio.charset.StandardCharsets
 abstract class TelegramStringsTask : DefaultTask() {
 
     companion object {
-        // NullgramName is the fork's manifest label and must stay a real resource,
-        // the others are referenced from res/xml (widget descriptions, account settings).
+        // The others are referenced from res/xml (widget descriptions, account settings).
         private val GENERATED_EXCLUSIONS = setOf(
             "AppName",
             "AppNameBeta",
-            "NullgramName",
             "Settings",
             "AccountSettings",
             "EditWidgetChatsInfo",
@@ -39,8 +37,7 @@ abstract class TelegramStringsTask : DefaultTask() {
 
         private val STABLE_IDS_EXCLUSIONS = setOf(
             "AppName",
-            "AppNameBeta",
-            "NullgramName"
+            "AppNameBeta"
         )
 
         private const val STRING_RESOURCE_ID_BASE = 0x7F0FFFFE

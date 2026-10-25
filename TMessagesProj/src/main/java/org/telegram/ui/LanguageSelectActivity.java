@@ -664,7 +664,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 case VIEW_TYPE_SETTINGS: {
                     TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
                     settingsCell.updateRTL();
-                    settingsCell.setText(LocaleController.getString("NnngramName", R.string.NullgramName), false);
+                    settingsCell.setText(LocaleController.getString("AppName", R.string.AppName), false);
                     /*HashSet<String> langCodes = RestrictedLanguagesSelectActivity.getRestrictedLanguages();
                     final String doNotTranslateCellName = LocaleController.getString("DoNotTranslate", R.string.DoNotTranslate);
                     String doNotTranslateCellValue = null;

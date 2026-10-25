@@ -19,7 +19,6 @@
   -->
 
 <resources>
-    <string name="NullgramName" translatable="false">NnngramX</string>
     <string name="NullgramPushService">Nnngram Push Service</string>
     <string name="NullSettings">Nnngram Settings</string>
     <string name="OfficialChannel">Official Channel</string>

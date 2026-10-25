@@ -1520,7 +1520,7 @@ public class LocaleController {
         }
         String override = null;
         if (res == R.string.AppName || res == R.string.AppNameBeta || "AppName".equals(key) || "AppNameBeta".equals(key)) {
-            override = getLocalizedString(R.string.NullgramName);
+            override = getLocalizedString(R.string.NnnAppLabel);
         } else if ("UnsupportedMedia".equals(key)) {
             override = getStringV2(null, R.string.UnsupportedMediaNullgram, null);
         }

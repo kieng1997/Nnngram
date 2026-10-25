@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Template: GenerateIdentityResTask substitutes __APPLICATION_ID__ for this build. -->
 <ContactsAccountType xmlns:android="http://schemas.android.com/apk/res/android">
     <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
-        android:mimeType="vnd.android.cursor.item/vnd.xyz.nextalone.nnngramx.android.profile"
+        android:mimeType="vnd.android.cursor.item/vnd.__APPLICATION_ID__.android.profile"
         android:summaryColumn="data2"
         android:detailColumn="data3"
         android:detailSocialSummary="true"/>
     <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
-        android:mimeType="vnd.android.cursor.item/vnd.xyz.nextalone.nnngramx.android.call"
+        android:mimeType="vnd.android.cursor.item/vnd.__APPLICATION_ID__.android.call"
         android:summaryColumn="data2"
         android:detailColumn="data3"
         android:detailSocialSummary="true"/>
     <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
-        android:mimeType="vnd.android.cursor.item/vnd.xyz.nextalone.nnngramx.android.call.video"
+        android:mimeType="vnd.android.cursor.item/vnd.__APPLICATION_ID__.android.call.video"
         android:summaryColumn="data2"
         android:detailColumn="data3"
         android:detailSocialSummary="true"/>

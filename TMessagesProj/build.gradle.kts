@@ -25,6 +25,7 @@ import java.io.FileInputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Properties
+import org.telegram.tasks.GenerateIdentityResTask
 import org.telegram.tasks.TelegramStringsTask
 import org.telegram.tasks.localization.GenerateLocalizationUtilsJavaTask
 
@@ -48,11 +49,26 @@ configurations {
 
 val abiName = mapOf("arm64-v8a" to "arm64")
 
+
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
+
+// Install identity. Changing NNN_APP_ID (gradle.properties or -PNNN_APP_ID=...) produces an
+// APK that installs alongside the others: every OS-visible identifier (providers, account
+// type, contact mime types, FileProvider, upgrade broadcast, data dir fallback) is derived
+// from applicationId. The launcher name follows the suffix: nnngramx -> NnngramX,
+// nnngrama -> NnngramX-a. res/xml templates cannot use ${applicationId}, so they are
+// expanded by GenerateIdentityResTask.
+val appId: String = (findProperty("NNN_APP_ID") as String?)
+    ?: localProperties.getProperty("NNN_APP_ID")
+    ?: error("NNN_APP_ID is missing: set it in gradle.properties (default install identity)")
+val appBaseName = "NnngramX"
+val appIdSuffix = Regex("""nnngram(\w*)$""").find(appId)?.groupValues?.get(1).orEmpty()
+val appLabel: String =
+    if (appIdSuffix.isEmpty() || appIdSuffix == "x") appBaseName else "$appBaseName-$appIdSuffix"
 val XRAY_AAR = "libs/xray/build/xraybridge.aar"
 val GOMOBILE_MODULE = "golang.org/x/mobile/cmd/gomobile@v0.0.0-20261011034528-197770444867"
 
@@ -188,9 +204,26 @@ dependencies {
     api(project(":jlatexmath"))
 }
 
+// Captured for the variant-scoped identity task; inside onVariants { } `appLabel`
+// would resolve against the variant receiver.
+val identityAppLabel = appLabel
+
 android {
-    defaultConfig.applicationId = "xyz.nextalone.nnngramx"
+    defaultConfig.applicationId = appId
     namespace = "org.telegram.messenger"
+
+    androidComponents {
+        onVariants { variant ->
+            val suffix = variant.name.replaceFirstChar { it.uppercase() }
+            val identityRes = tasks.register<GenerateIdentityResTask>("generate${suffix}IdentityRes") {
+                applicationId.set(variant.applicationId)
+                appLabel.set(identityAppLabel)
+                templates.set(layout.projectDirectory.dir("identity/xml"))
+                outputDir.set(layout.buildDirectory.dir("generated/identityRes/${variant.name}/res"))
+            }
+            variant.sources.res?.addGeneratedSourceDirectory(identityRes, GenerateIdentityResTask::outputDir)
+        }
+    }
 
     sourceSets.getByName("main") {
         java.srcDir("src/main/java")
@@ -310,7 +343,7 @@ android {
         outputs.all {
             val abi = this.filters.find { it.filterType == FilterConfiguration.FilterType.ABI.name }?.identifier
             val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            val outputFileName = "Nnngram-${defaultConfig.versionName}-${abiName[abi]}.apk"
+            val outputFileName = "${appLabel}-${defaultConfig.versionName}-${abiName[abi]}.apk"
             output?.outputFileName = outputFileName
         }
     }

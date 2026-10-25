@@ -124,7 +124,7 @@
         android:icon="@mipmap/ic_launcher_nagram"
         android:roundIcon="@mipmap/ic_launcher_nagram_round"
         android:largeHeap="true"
-        android:label="@string/NullgramName"
+        android:label="@string/NnnAppLabel"
         android:theme="@style/Theme.TMessages.Start"
         android:manageSpaceActivity="org.telegram.ui.ExternalActionActivity"
         android:supportsRtl="false"

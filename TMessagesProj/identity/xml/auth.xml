@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-
+<!-- Template: GenerateIdentityResTask substitutes __APPLICATION_ID__ for this build. -->
 <account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accountType="xyz.nextalone.nnngramx"
+    android:accountType="__APPLICATION_ID__"
     android:icon="@drawable/ic_launcher_dr"
     android:smallIcon="@drawable/ic_launcher_dr"
-    android:label="@string/AppName"
+    android:label="@string/NnnAppLabel"
     android:accountPreferences="@xml/auth_menu"/>

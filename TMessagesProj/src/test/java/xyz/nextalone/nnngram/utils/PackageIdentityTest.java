@@ -7,9 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Lightweight JVM regression test asserting that the install identity of this fork
- * ({@code xyz.nextalone.nnngramx}) is consistent everywhere the OS sees it, so the
- * original Nnngram app can be installed side by side.
+ * Lightweight JVM regression test asserting that every OS-visible identifier of this
+ * fork derives from {@code applicationId} instead of a hard-coded literal, so builds
+ * with different {@code NNN_APP_ID} values install side by side without colliding on
+ * account types, contact mime types, provider authorities or the launcher name.
  *
  * <pre>
  * javac -d /tmp/out TMessagesProj/src/test/java/xyz/nextalone/nnngram/utils/PackageIdentityTest.java
@@ -24,16 +25,20 @@ public final class PackageIdentityTest {
     private static final String RES = "TMessagesProj/src/main/res/";
     private static final String MANIFEST = "TMessagesProj/src/main/AndroidManifest.xml";
 
+    private static final String IDENTITY = "TMessagesProj/identity/xml/";
     private static final String PACKAGE_ID = "xyz.nextalone.nnngramx";
-    private static final String APP_NAME = "NnngramX";
     private static final String OLD_ID = "\"xyz.nextalone.nnngram\"";
 
     public static void main(String[] args) throws IOException {
         Path root = Paths.get(args.length > 0 ? args[0] : ".").toAbsolutePath().normalize();
 
         String gradle = read(root, "TMessagesProj/build.gradle.kts");
-        assertPresent(gradle, "applicationId", "applicationId = \"" + PACKAGE_ID + "\"");
+        assertPresent(gradle, "applicationId from NNN_APP_ID", "defaultConfig.applicationId = appId");
+        assertMissing(gradle, "no hard-coded applicationId", "applicationId = \"" + PACKAGE_ID + "\"");
         assertPresent(gradle, "namespace unchanged", "namespace = \"org.telegram.messenger\"");
+        assertPresent(gradle, "identity res wired", "addGeneratedSourceDirectory(identityRes");
+        assertPresent(read(root, "gradle.properties"), "default install identity",
+                "NNN_APP_ID=" + PACKAGE_ID);
 
         String contacts = read(root, JAVA + "org/telegram/messenger/ContactsController.java");
         assertMissing(contacts, "account type literal", OLD_ID);
@@ -54,19 +59,24 @@ public final class PackageIdentityTest {
         assertPresent(launch, "video call mime from build",
                 "\"vnd.android.cursor.item/vnd.\" + ApplicationLoader.getApplicationId() + \".android.call.video\"");
 
-        assertPresent(read(root, RES + "xml/auth.xml"), "authenticator account type",
-                "android:accountType=\"" + PACKAGE_ID + "\"");
-        assertPresent(read(root, RES + "xml/sync_contacts.xml"), "sync adapter account type",
-                "android:accountType=\"" + PACKAGE_ID + "\"");
-        assertPresent(read(root, RES + "xml/auth_menu.xml"), "account settings target package",
-                "android:targetPackage=\"" + PACKAGE_ID + "\"");
-        String contactsXml = read(root, RES + "xml/contacts.xml");
+        assertPresent(read(root, IDENTITY + "auth.xml"), "authenticator account type",
+                "android:accountType=\"__APPLICATION_ID__\"");
+        assertPresent(read(root, IDENTITY + "sync_contacts.xml"), "sync adapter account type",
+                "android:accountType=\"__APPLICATION_ID__\"");
+        assertPresent(read(root, IDENTITY + "auth_menu.xml"), "account settings target package",
+                "android:targetPackage=\"__APPLICATION_ID__\"");
+        String contactsXml = read(root, IDENTITY + "contacts.xml");
         assertMissing(contactsXml, "contact data kind mime", "org.telegram.messenger.android");
         assertPresent(contactsXml, "contact data kind mime prefix",
-                "vnd.android.cursor.item/vnd." + PACKAGE_ID + ".android.profile");
+                "vnd.android.cursor.item/vnd.__APPLICATION_ID__.android.profile");
+        for (String name : new String[]{"auth", "auth_menu", "contacts", "sync_contacts"}) {
+            if (Files.exists(root.resolve(RES + "xml/" + name + ".xml"))) {
+                throw new AssertionError("res/xml/" + name + ".xml must be generated, not checked in");
+            }
+        }
 
         String manifest = read(root, MANIFEST);
-        assertPresent(manifest, "application label", "android:label=\"@string/NullgramName\"");
+        assertPresent(manifest, "application label", "android:label=\"@string/NnnAppLabel\"");
         assertPresent(manifest, "call mime filter", "vnd.android.cursor.item/vnd.${applicationId}.android.call\"");
         assertMissing(manifest, "stale upstream call mime", "vnd.org.telegram.messenger.android.call");
         for (String authority : new String[]{".provider", ".notification_image_provider", ".call_sound_provider"}) {
@@ -74,18 +84,31 @@ public final class PackageIdentityTest {
                     "android:authorities=\"${applicationId}" + authority + "\"");
         }
 
-        String defaultStrings = read(root, RES + "values/strings.xml");
-        assertPresent(defaultStrings, "AppName", "name=\"AppName\" translatable=\"false\">" + APP_NAME + "<");
-        assertPresent(defaultStrings, "AppNameBeta", "name=\"AppNameBeta\" translatable=\"false\">" + APP_NAME + " Beta<");
-        assertPresent(read(root, RES + "values/strings_nullgram.xml"), "default display name",
-                "<string name=\"NullgramName\" translatable=\"false\">" + APP_NAME + "</string>");
-        assertPresent(read(root, RES + "values-zh/strings_nullgram.xml"), "zh display name",
-                "<string name=\"NullgramName\">" + APP_NAME + "</string>");
-        assertPresent(read(root, RES + "values-zh-rTW/strings_nullgram.xml"), "zh-rTW display name",
-                "<string name=\"NullgramName\">" + APP_NAME + "</string>");
+        String identityTask = read(root,
+                "buildSrc/src/main/kotlin/org/telegram/tasks/GenerateIdentityResTask.kt");
+        assertPresent(identityTask, "generated label resource", "NnnAppLabel");
+        assertPresent(identityTask, "applicationId placeholder", "__APPLICATION_ID__");
 
-        System.out.println("OK: install identity, account/contact types, provider authorities and display name"
-                + " consistently use " + PACKAGE_ID + " / " + APP_NAME);
+        // NnnAppLabel is not in the bundled localization assets, so every read has to go
+        // through the resource id. A by-name lookup would return LOC_ERR for it.
+        assertMissing(read(root, JAVA + "org/telegram/ui/LanguageSelectActivity.java"),
+                "label read by resource", "getString(\"NnngramName\", R.string.NnnAppLabel)");
+        assertPresent(read(root, JAVA + "org/telegram/ui/LanguageSelectActivity.java"),
+                "label read through AppName override",
+                "LocaleController.getString(\"AppName\", R.string.AppName)");
+
+        // The label must not be a checked-in string, or a renamed build would still
+        // show the default name on the launcher.
+        for (String strings : new String[]{
+                RES + "values/strings_nullgram.xml",
+                RES + "values-zh/strings_nullgram.xml",
+                RES + "values-zh-rTW/strings_nullgram.xml"}) {
+            assertMissing(read(root, strings), "checked-in launcher name", "NullgramName");
+        }
+
+        System.out.println("OK: install identity derives from applicationId"
+                + " (default " + PACKAGE_ID + "); account/contact types, provider authorities,"
+                + " FileProvider and the launcher label all follow it");
     }
 
     private static String read(Path root, String relative) throws IOException {
