@@ -385,12 +385,6 @@ android {
     }
 }
 
-kotlin {
-    sourceSets.configureEach {
-        kotlin.srcDir("${layout.buildDirectory.asFile.get().absolutePath}/generated/ksp/$name/kotlin/")
-    }
-}
-
 // Upstream packs strings.xml into binary localization assets and strips the string resources.
 // Fork strings live in strings_nullgram.xml, so they have to go through the same pipeline.
 tasks.withType<TelegramStringsTask>().configureEach {

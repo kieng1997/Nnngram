@@ -140,6 +140,36 @@ def single_identity_keeps_original_tasks_and_paths():
         check(task not in result.stdout, f"{task}: single identity must not gain flavor tasks", log)
 
 
+def stale_single_identity_ksp_output_does_not_break_multi_identity_compile():
+    # Precondition: a single-identity build has already produced its own KSP output.
+    result, log = gradle(
+        "stale-release-ksp",
+        [":TMessagesProj:kspReleaseKotlin", "-PNNN_APP_ID=xyz.test.nnngramz"],
+    )
+    check(result.returncode == 0, "single identity ksp run failed:\n" + result.stdout[-2000:], log)
+    stale = ROOT / "TMessagesProj" / "build" / "generated" / "ksp" / "release" / "kotlin"
+    check(
+        any(stale.rglob("*.kt")),
+        f"precondition missing: {stale} holds no generated sources",
+        log,
+    )
+
+    result, log = gradle(
+        "stale-multi-compile",
+        [
+            ":TMessagesProj:compileApp1ReleaseKotlin",
+            ":TMessagesProj:compileApp2ReleaseKotlin",
+            "-PNNN_APP_ID=xyz.test.nnngrama,xyz.test.nnngramb",
+        ],
+    )
+    check(
+        result.returncode == 0,
+        "multi identity compile breaks after a single identity KSP run left output behind:\n"
+        + result.stdout[-2000:],
+        log,
+    )
+
+
 def rejects_invalid_identity_lists():
     for name, app_ids, expected in (
         ("empty-item", "xyz.test.nnngrama,,xyz.test.nnngramb", "empty install identity"),
@@ -162,6 +192,7 @@ def main():
             multi_identity_builds_one_variant_per_id,
             one_assemble_release_covers_every_identity,
             single_identity_keeps_original_tasks_and_paths,
+            stale_single_identity_ksp_output_does_not_break_multi_identity_compile,
             rejects_invalid_identity_lists,
         )
     }
