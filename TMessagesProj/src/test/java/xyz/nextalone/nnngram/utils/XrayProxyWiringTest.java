@@ -110,7 +110,7 @@ public final class XrayProxyWiringTest {
         assertContains(proxyList, "notification refreshes enabled flag",
                 "useProxySettings = MessagesController.getGlobalMainSettings().getBoolean(\"proxy_enabled\", false) && !SharedConfig.proxyList.isEmpty();");
         assertContains(proxyList, "gear routes xray entries", "currentInfo.settings.getType() == ProxySettings.Type.XRAY");
-        assertContains(proxyList, "list hides loopback", "xrayLabel(proxyInfo.settings.getSecret())");
+        assertContains(proxyList, "list hides loopback", "xrayLabel(secret)");
         assertNotContains(proxyList, "no loopback in list label", "\"127.0.0.1\"");
         assertContains(qrHelper, "qr routes xray links", "XrayProxyActivity(link)");
         assertContains(qrHelper, "qr keeps unknown links", "Browser.openUrl(fragment.parentActivity, link, true, false)");

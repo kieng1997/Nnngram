@@ -80,6 +80,7 @@ import java.util.List;
 import xyz.nextalone.nnngram.activity.WsSettingsActivity;
 import xyz.nextalone.nnngram.activity.XrayProxyActivity;
 import xyz.nextalone.nnngram.helpers.WebSocketHelper;
+import xyz.nextalone.nnngram.utils.ProxyLinkAlias;
 
 public class ProxyListActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private final static boolean IS_PROXY_ROTATION_AVAILABLE = true;
@@ -212,10 +213,12 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
 
         public void setProxy(SharedConfig.ProxyInfo proxyInfo) {
             if (proxyInfo.settings.getType() == ProxySettings.Type.XRAY) {
-                // Only the remote endpoint is shown: never the loopback port or
-                // anything derived from the share link.
-                textView.setText(proxyInfo.settings.getAddress() + ":" + proxyInfo.settings.getPort()
-                        + " (" + xrayLabel(proxyInfo.settings.getSecret()) + ")");
+                // Never expose connection credentials or the local loopback port.
+                final String secret = proxyInfo.settings.getSecret();
+                final String alias = ProxyLinkAlias.from(secret);
+                textView.setText((alias != null ? alias
+                        : proxyInfo.settings.getAddress() + ":" + proxyInfo.settings.getPort())
+                        + " (" + xrayLabel(secret) + ")");
             } else if (WebSocketHelper.proxyServer.equals(proxyInfo.settings.getAddress())) {
                 textView.setText(LocaleController.getString("PublicProxy", R.string.PublicProxy));
             } else {
