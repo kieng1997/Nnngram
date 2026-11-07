@@ -112,6 +112,9 @@ import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 
+import xyz.nextalone.gen.Config;
+import xyz.nextalone.nnngram.helpers.TitleHelper;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -187,6 +190,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     BaseFragment fragment;
     private CharSequence currentTitle;
     private boolean hasOverlayText;
+    /** the title slot shows our own identity (logo or custom title), not stories text */
+    private boolean customTitleShown;
     private int overlayTextId;
     private SpannableStringBuilder uploadingString;
     private ValueAnimator textAnimator;
@@ -653,6 +658,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 LocaleController.formatPluralString("Stories", totalCount);
         }
 
+        CharSequence storiesTitle = currentTitle;
+        currentTitle = TitleHelper.storiesHeaderText(storiesTitle, Config.getCustomTitle(), LocaleController.getString("AppName", R.string.AppName));
+        customTitleShown = TextUtils.isEmpty(storiesTitle) && !TextUtils.isEmpty(currentTitle);
+
         if (!hasOverlayText) {
             titleView.setText(currentTitle, animated && !LocaleController.isRTL);
         }
@@ -963,7 +972,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             telegramLogoView.setTranslationX(titleView.getTranslationX() + dp(1));
             telegramLogoView.setTranslationY(bottomY + dp(14 + FAKE_TOP_PADDING + 4.333f) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
 
-            emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + telegramLogoView.getMeasuredWidth());
+            emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f)
+                    + (customTitleShown ? titleView.getDrawable().getWidth() : telegramLogoView.getMeasuredWidth()));
             emojiStatusView.setTranslationY(bottomY + dp(14 - 11 + FAKE_TOP_PADDING + 4.333f) + translationOffset);
 
             subtitleOverlayContainer.setTranslationX(titleView.getTranslationX());
@@ -1350,6 +1360,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     public void onResume() {
         storiesController.checkExpiredStories();
+        updateItems(false, false);
         for (int i = 0; i < items.size(); i++) {
             TL_stories.PeerStories stories = storiesController.getStories(items.get(i).dialogId);
             if (stories != null) {
@@ -2230,6 +2241,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         final float logoVisibility = 1f - titleVisibility;
         final float titleAlpha = titleVisibility * progress;
         final float logoAlpha = logoVisibility * progress;
+        // the status sits next to our own identity: the logo, or a custom title in its place
+        final float statusAlpha = progress * (hasOverlayText ? 0f : (customTitleShown ? 1f : logoVisibility));
 
         if (titleView != null) {
             titleView.setAlpha(titleAlpha);
@@ -2240,8 +2253,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             telegramLogoView.setVisibility(logoAlpha > 0 ? VISIBLE : GONE);
         }
         if (emojiStatusView != null) {
-            emojiStatusView.setAlpha(logoAlpha);
-            emojiStatusView.setVisibility(logoAlpha > 0 ? VISIBLE : GONE);
+            emojiStatusView.setAlpha(statusAlpha);
+            emojiStatusView.setVisibility(statusAlpha > 0 ? VISIBLE : GONE);
         }
         if (subtitleOverlayContainer != null) {
             subtitleOverlayContainer.setAlpha(progress);

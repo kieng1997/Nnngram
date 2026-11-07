@@ -296,6 +296,7 @@ import xyz.nextalone.gen.Config;
 import xyz.nextalone.nnngram.config.ForwardContext;
 import xyz.nextalone.nnngram.helpers.PasscodeHelper;
 import xyz.nextalone.nnngram.helpers.QrHelper;
+import xyz.nextalone.nnngram.helpers.TitleHelper;
 import xyz.nextalone.nnngram.ui.AppLinkVerifyBottomSheet;
 import xyz.nextalone.nnngram.ui.SendOptionsMenuLayout;
 import xyz.nextalone.nnngram.utils.APKUtils;
@@ -3062,6 +3063,35 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private Drawable premiumStar;
 
+    /**
+     * Renders the app title (custom title, or the stock Telegram logo) and always keeps
+     * {@link #actionBarDefaultTitle} in sync with the setting, so the tab switch paths
+     * restore a current value even when the repaint below is skipped.
+     *
+     * @param initial createView just built a new action bar whose title is empty
+     */
+    private void applyHeaderTitle(boolean initial) {
+        if (actionBar == null || statusDrawable == null || onlySelect || folderId != 0 || communityId != 0) {
+            return;
+        }
+        CharSequence previous = actionBarDefaultTitle;
+        CharSequence headerText = TitleHelper.headerText(Config.getCustomTitle(), LocaleController.getString("AppName", R.string.AppName));
+        if (headerText == null) {
+            logoDrawable = getContext().getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
+            logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
+            logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
+            SpannableStringBuilder ssb = new SpannableStringBuilder("T");
+            ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            actionBarDefaultTitle = ssb;
+        } else {
+            logoDrawable = null;
+            actionBarDefaultTitle = headerText;
+        }
+        if (TitleHelper.shouldRender(initial, previous, actionBar.getTitle())) {
+            actionBar.setTitle(actionBarDefaultTitle, statusDrawable);
+        }
+    }
+
     public void updateStatus(TLRPC.User user, boolean animated) {
         if (dialogStoriesCell != null) {
             dialogStoriesCell.updateStatus(user, animated);
@@ -3243,7 +3273,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return actionBar;
     }
 
-    private String actionBarDefaultTitle;
+    private CharSequence actionBarDefaultTitle;
 
     @Override
     public void setTitleOverlayText(String title, int titleId, Runnable action) {
@@ -3583,18 +3613,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else {
                 statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
                 statusDrawable.center = true;
-                String customTitle = Config.getCustomTitle();
-                String defaultTitle = LocaleController.getString("AppName", R.string.AppName);
-                if (TextUtils.isEmpty(customTitle) || customTitle.equals(defaultTitle)) {
-                    logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
-                    logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
-                    logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                    SpannableStringBuilder ssb = new SpannableStringBuilder("T");
-                    ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    actionBar.setTitle(ssb, statusDrawable);
-                } else {
-                    actionBar.setTitle(customTitle, statusDrawable);
-                }
+                applyHeaderTitle(true);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
@@ -7021,7 +7040,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 filterTabsView.resetTabId();
 
-                if (actionBarDefaultTitle != null && !actionBarDefaultTitle.equals(actionBar.getTitle())) {
+                if (actionBarDefaultTitle != null && !String.valueOf(actionBarDefaultTitle).equals(actionBar.getTitle())) {
                     if (animated) {
                         actionBar.setTitleAnimatedX(actionBarDefaultTitle, statusDrawable, false, 200);
                     } else {
@@ -7098,6 +7117,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
+        applyHeaderTitle(false);
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
