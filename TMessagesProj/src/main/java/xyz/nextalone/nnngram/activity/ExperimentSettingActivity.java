@@ -300,15 +300,13 @@ public class ExperimentSettingActivity extends BaseActivity {
         disableSecondAddressRow = addRow("disableSecondAddress");
         experiment2Row = addRow();
 
-        if (Config.showHiddenSettings) {
-            specialRow = addRow();
-            blockSponsorAdsRow = addRow("blockSponsorAds");
-            hideProxySponsorChannelRow = addRow("hideProxySponsorChannel");
-            disableSendTypingRow = addRow("disableSendTyping");
-            keepOnlineStatusAsRow = addRow("keepOnlineStatusAs");
-            storyStealthModeRow = addRow("storyStealthMode");
-            special2Row = addRow();
-        }
+        specialRow = addRow();
+        blockSponsorAdsRow = addRow("blockSponsorAds");
+        hideProxySponsorChannelRow = addRow("hideProxySponsorChannel");
+        disableSendTypingRow = addRow("disableSendTyping");
+        keepOnlineStatusAsRow = addRow("keepOnlineStatusAs");
+        storyStealthModeRow = addRow("storyStealthMode");
+        special2Row = addRow();
 
         panguRow = addRow();
         enablePanguOnSendingRow = addRow("enablePanguOnSending");
@@ -316,14 +314,12 @@ public class ExperimentSettingActivity extends BaseActivity {
         pangu3Row = addRow();
         pangu2Row = addRow();
 
-        if (Config.showHiddenSettings) {
-            premiumRow = addRow();
-            hidePremiumStickerAnimRow = addRow("hidePremiumStickerAnim");
-            fastSpeedUploadRow = addRow("fastSpeedUpload");
-            modifyDownloadSpeedRow = addRow("modifyDownloadSpeed");
-            premium2Row = addRow();
-            ignoreChatStrictRow = addRow("ignoreChatStrict");
-        }
+        premiumRow = addRow();
+        hidePremiumStickerAnimRow = addRow("hidePremiumStickerAnim");
+        fastSpeedUploadRow = addRow("fastSpeedUpload");
+        modifyDownloadSpeedRow = addRow("modifyDownloadSpeed");
+        premium2Row = addRow();
+        ignoreChatStrictRow = addRow("ignoreChatStrict");
 
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
@@ -448,7 +444,8 @@ public class ExperimentSettingActivity extends BaseActivity {
                     } else if (position == enablePanguOnReceivingRow) {
                         textCell.setTextAndCheck(LocaleController.getString("enablePanguOnReceiving", R.string.enablePanguOnReceiving), Config.enablePanguOnReceiving, true);
                     } else if (position == ignoreChatStrictRow) {
-                        textCell.setTextAndCheck("", Config.ignoreChatStrict, true);
+                        textCell.setTextAndCheck(LocaleController.getString("ignoreChatStrict", R.string.ignoreChatStrict),
+                            Config.ignoreChatStrict, true);
                     } else if (position == enableXiaomiHyperAiRow) {
                         textCell.setTextAndCheck(LocaleController.getString(R.string.enableXiaomiHyperAi), Config.enableXiaomiHyperAi, true);
                     } else if (position == disableSecondAddressRow) {

@@ -575,9 +575,7 @@ public class ChatSettingActivity extends BaseActivity {
         disablePremiumStickerRow = addRow("disablePremiumSticker");
         messageMenuRow = addRow();
         textStyleSettingsRow = addRow("textStyleSettings");
-        if (Config.showHiddenSettings) {
-            allowScreenshotOnNoForwardChatRow = addRow("allowScreenshotOnNoForwardChat");
-        }
+        allowScreenshotOnNoForwardChatRow = addRow("allowScreenshotOnNoForwardChat");
         labelChannelUserRow = addRow("labelChannelUser");
         displaySpoilerDirectlyRow = addRow("displaySpoilerDirectly");
         disableJumpToNextChannelRow = addRow("disableJumpToNextChannel");

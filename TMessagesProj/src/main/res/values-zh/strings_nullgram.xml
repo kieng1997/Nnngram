@@ -193,6 +193,7 @@
     <string name="TabTitleTypeIcon">图标</string>
     <string name="TabTitleTypeMix">带标题的图标</string>
     <string name="modifyDownloadSpeed">自定义下载速度</string>
+    <string name="ignoreChatStrict">忽略内容保护限制</string>
     <string name="AppIconMain">主要图标</string>
     <string name="icon_1">图标 1</string>
     <string name="icon_2">图标 2</string>

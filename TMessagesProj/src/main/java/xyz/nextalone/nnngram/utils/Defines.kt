@@ -54,7 +54,6 @@ object Defines {
     @BooleanConfig const val disableTrendingSticker = "disableTrendingSticker"
     @BooleanConfig const val disablePremiumSticker = "disablePremiumSticker"
     @BooleanConfig const val disableInstantCamera = "disableInstantCamera"
-    @BooleanConfig const val showHiddenSettings = "showHiddenSettings"
     @BooleanConfig const val confirmToSendMediaMessages = "confirmToSendMediaMessages"
     @BooleanConfig const val disableUndo = "disableUndo"
     @BooleanConfig const val skipOpenLinkConfirm = "skipOpenLinkConfirm"

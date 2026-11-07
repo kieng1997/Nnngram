@@ -195,6 +195,7 @@
     <string name="TabTitleTypeIcon">圖示</string>
     <string name="TabTitleTypeMix">帶標題的圖示</string>
     <string name="modifyDownloadSpeed">調整下載速度</string>
+    <string name="ignoreChatStrict">忽略內容保護限制</string>
     <string name="AppIconMain">主要圖示</string>
     <string name="icon_1">圖示 1</string>
     <string name="icon_2">圖示 2</string>

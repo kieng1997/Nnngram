@@ -787,8 +787,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         moreButtonView.addSubItem(0, LocaleController.getString("ProxySettings", R.string.ProxySettings));
         moreButtonView.addSubItem(1, LocaleController.getString("BotLogin", R.string.BotLogin));
         moreButtonView.addSubItem(2, LocaleController.getString("QRLoginTitle", R.string.QRLoginTitle));
-        if (Config.showHiddenSettings)
-            moreButtonView.addSubItem(3, LocaleController.getString("CustomApiLogin", R.string.customAPI));
+        moreButtonView.addSubItem(3, LocaleController.getString("CustomApiLogin", R.string.customAPI));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
             moreButtonView.addSubItem(4, getString(R.string.Passkey));
         moreButtonView.setDelegate(id -> {
@@ -798,7 +797,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 setPage(VIEW_BOT_LOGIN, true, null, false);
             } else if (id == 2) {
                 setPage(VIEW_QR_LOGIN, true, null, false);
-            } else if (id == 3 && Config.showHiddenSettings) {
+            } else if (id == 3) {
                 AtomicInteger targetApi = new AtomicInteger(-1);
                 BottomBuilder builder = new BottomBuilder(getParentActivity());
                 EditText[] inputs = new EditText[2];

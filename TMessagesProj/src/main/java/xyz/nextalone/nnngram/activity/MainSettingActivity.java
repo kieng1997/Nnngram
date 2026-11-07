@@ -80,7 +80,6 @@ public class MainSettingActivity extends BaseActivity {
     private int licenseRow;
     private int about2Row;
     private int passcodeRow;
-    private int pressCount = 0;
 
     private boolean sensitiveEnabled;
     private boolean sensitiveCanChange;
@@ -125,14 +124,6 @@ public class MainSettingActivity extends BaseActivity {
 
     @Override
     protected boolean onItemLongClick(View view, int position, float x, float y) {
-        if (position == experimentRow) {
-            pressCount++;
-            if (pressCount >= 2) {
-                Config.toggleShowHiddenSettings();
-                AndroidUtilities.shakeView(view);
-                return true;
-            }
-        }
         return false;
     }
 
