@@ -12721,14 +12721,17 @@ public class MessageObject {
     /**
      * 返回此消息应执行的过滤动作 (见 {@link MessageFilterRules}).
      * 首次调用时计算并缓存到 {@link #filterAction}. 规则或订阅的 Config 变化后调用方需重置为 -1 重新计算.
+     * 例外: 赞助广告拦截是实时判定, 既不读也不写 {@link #filterAction} 缓存 —
+     * sponsoredId 在构造完成后才由 MessagesController 赋值, 读缓存会漏拦构造期算出的旧值,
+     * 写缓存则在关闭开关后残留隐藏.
      */
     public int getFilterAction() {
+        if (isSponsored() && Config.blockSponsorAds) {
+            return MessageFilterRules.ACTION_HIDE;
+        }
         if (filterAction != -1) return filterAction;
         int result = MessageFilterRules.ACTION_NONE;
         var messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
-        if (isSponsored() && Config.blockSponsorAds) {
-            result = MessageFilterRules.ACTION_HIDE;
-        }
         if (result != MessageFilterRules.ACTION_HIDE && Config.ignoreBlockedUser) {
             var chatFull = messagesController.getChatFull(getFromChatId());
             boolean blocked = chatFull != null && chatFull.blocked;
