@@ -62,13 +62,38 @@ if (localPropertiesFile.exists()) {
 // from applicationId. The launcher name follows the suffix: nnngramx -> NnngramX,
 // nnngrama -> NnngramX-a. res/xml templates cannot use ${applicationId}, so they are
 // expanded by GenerateIdentityResTask.
-val appId: String = (findProperty("NNN_APP_ID") as String?)
-    ?: localProperties.getProperty("NNN_APP_ID")
-    ?: error("NNN_APP_ID is missing: set it in gradle.properties (default install identity)")
+// Several identities can be listed comma-separated; each one gets its own flavor (app1,
+// app2, ...) so a single :TMessagesProj:assembleRelease builds one APK per install identity.
 val appBaseName = "NnngramX"
-val appIdSuffix = Regex("""nnngram(\w*)$""").find(appId)?.groupValues?.get(1).orEmpty()
-val appLabel: String =
-    if (appIdSuffix.isEmpty() || appIdSuffix == "x") appBaseName else "$appBaseName-$appIdSuffix"
+val appIdPattern = Regex("""[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+""")
+
+fun parseAppIds(raw: String): List<String> {
+    val ids = raw.split(',').map { it.trim() }
+    if (ids.any { it.isEmpty() }) {
+        error("NNN_APP_ID: empty install identity in '$raw'")
+    }
+    val invalid = ids.filterNot { appIdPattern.matches(it) }
+    if (invalid.isNotEmpty()) {
+        error("NNN_APP_ID: invalid install identity ${invalid.joinToString()} in '$raw'")
+    }
+    val duplicate = ids.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+    if (duplicate.isNotEmpty()) {
+        error("NNN_APP_ID: duplicate install identity ${duplicate.joinToString()} in '$raw'")
+    }
+    return ids
+}
+
+fun appLabelFor(appId: String): String {
+    val appIdSuffix = Regex("""nnngram(\w*)$""").find(appId)?.groupValues?.get(1).orEmpty()
+    return if (appIdSuffix.isEmpty() || appIdSuffix == "x") appBaseName else "$appBaseName-$appIdSuffix"
+}
+
+val appIds: List<String> = parseAppIds(
+    (findProperty("NNN_APP_ID") as String?)
+        ?: localProperties.getProperty("NNN_APP_ID")
+        ?: error("NNN_APP_ID is missing: set it in gradle.properties (default install identity)")
+)
+val appId: String = appIds.first()
 val XRAY_AAR = "libs/xray/build/xraybridge.aar"
 val GOMOBILE_MODULE = "golang.org/x/mobile/cmd/gomobile@v0.0.0-20261011034528-197770444867"
 
@@ -204,20 +229,30 @@ dependencies {
     api(project(":jlatexmath"))
 }
 
-// Captured for the variant-scoped identity task; inside onVariants { } `appLabel`
-// would resolve against the variant receiver.
-val identityAppLabel = appLabel
-
 android {
     defaultConfig.applicationId = appId
     namespace = "org.telegram.messenger"
+
+    // One flavor per install identity; a single NNN_APP_ID stays flavorless and keeps
+    // the original task names and output directories.
+    if (appIds.size > 1) {
+        flavorDimensions += "identity"
+        productFlavors {
+            appIds.forEachIndexed { index, id ->
+                create("app${index + 1}") {
+                    dimension = "identity"
+                    applicationId = id
+                }
+            }
+        }
+    }
 
     androidComponents {
         onVariants { variant ->
             val suffix = variant.name.replaceFirstChar { it.uppercase() }
             val identityRes = tasks.register<GenerateIdentityResTask>("generate${suffix}IdentityRes") {
                 applicationId.set(variant.applicationId)
-                appLabel.set(identityAppLabel)
+                appLabel.set(variant.applicationId.map { appLabelFor(it) })
                 templates.set(layout.projectDirectory.dir("identity/xml"))
                 outputDir.set(layout.buildDirectory.dir("generated/identityRes/${variant.name}/res"))
             }
@@ -340,10 +375,11 @@ android {
     }
 
     applicationVariants.all {
+        val variantAppLabel = appLabelFor(applicationId)
         outputs.all {
             val abi = this.filters.find { it.filterType == FilterConfiguration.FilterType.ABI.name }?.identifier
             val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            val outputFileName = "${appLabel}-${defaultConfig.versionName}-${abiName[abi]}.apk"
+            val outputFileName = "${variantAppLabel}-${defaultConfig.versionName}-${abiName[abi]}.apk"
             output?.outputFileName = outputFileName
         }
     }

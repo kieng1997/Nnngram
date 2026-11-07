@@ -49,6 +49,14 @@ NNN_APP_ID=xyz.nextalone.nnngramx   # 默认；桌面名 NnngramX
 
 桌面名自动跟随后缀：`nnngramx`(或无后缀) → `NnngramX`，`nnngrama` → `NnngramX-a`。
 
+多个安装身份可逗号分隔一次构建：每个身份一个 flavor（`app1`、`app2`…，按书写顺序），一条 `:TMessagesProj:assembleRelease` 产出全部 APK；各身份的 `applicationId`、桌面名与 APK 文件名互不影响，产物目录按 flavor 独立（`build/outputs/apk/<flavor>/...`）：
+
+```properties
+NNN_APP_ID=xyz.nextalone.nnngramx,xyz.nextalone.nnngramxk
+```
+
+空项、非法包名、重复项在配置阶段直接报错。单个身份时仍是原来的 debug/release 变体，任务名与产物目录不变。注意 CI 发包仍只支持**单个** APK（`find ... '*arm64*.apk'` 写入 `GITHUB_ENV` 遇多行会失败），多包仅用于本地构建。
+
 以下标识**自动**由 `applicationId` 派生，无需改动：provider authorities、FileProvider、call mime filter、taskAffinity、`BuildConfig.APPLICATION_ID`、联系人账号类型与 mime（`ApplicationLoader.getApplicationId()`）、升级广播匹配、`/data/data/<pkg>` 回退路径。
 
 以下**不**支持 manifest 占位符，改包名时必须走模板（`TMessagesProj/identity/xml/*.xml` → `GenerateIdentityResTask` 生成到 `build/generated/identityRes/`）：
@@ -61,7 +69,7 @@ NNN_APP_ID=xyz.nextalone.nnngramx   # 默认；桌面名 NnngramX
 | `sync_contacts.xml` | `accountType` |
 
 桌面名走生成的 `@string/NnnAppLabel`（`translatable="false"`，不入本地化资产管线），不再使用写死的 `NullgramName`。注意 `NnnAppLabel` 只存在于资源里，**不能**用 `LocaleController.getString("<key>", ...)` 按名字查（那走的是本地化资产，会返回 `LOC_ERR`）；要拿显示名请用 `LocaleController.getString("AppName", R.string.AppName)`，它已被 override 成该标签。
-回归测试：`TMessagesProj/src/test/java/xyz/nextalone/nnngram/utils/PackageIdentityTest.java`。
+回归测试：`TMessagesProj/src/test/java/xyz/nextalone/nnngram/utils/PackageIdentityTest.java`；多身份变体/生成资源回归 `python TMessagesProj/src/test/python/MultiIdentityBuildTest.py`（驱动真实 Gradle 入口，日志在 `TMessagesProj/build/multi-identity-test/`）。
 
 ## 版本
 `gradle.properties` 是 single source of truth：
