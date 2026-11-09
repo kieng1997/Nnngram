@@ -65,6 +65,7 @@ import java.util.function.IntConsumer;
 import kotlin.Unit;
 import xyz.nextalone.gen.Config;
 import xyz.nextalone.nnngram.config.ConfigManager;
+import xyz.nextalone.nnngram.helpers.LauncherNameController;
 import xyz.nextalone.nnngram.helpers.TranslateHelper;
 import xyz.nextalone.nnngram.helpers.TranslateHelper.ProviderType;
 import xyz.nextalone.nnngram.translate.providers.DeepLTranslator;
@@ -111,6 +112,7 @@ public class GeneralSettingActivity extends BaseActivity {
     private int llmSettings2Row;
 
     private int customTitleRow;
+    private int launcherNameRow;
     private int showBotAPIRow;
     private int showExactNumberRow;
     private int showExactTimeRow;
@@ -163,7 +165,19 @@ public class GeneralSettingActivity extends BaseActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
-        if (position == customTitleRow) {
+        if (position == launcherNameRow) {
+            PopupBuilder.show(LauncherNameController.names(), LocaleController.getString(R.string.LauncherName),
+                    LauncherNameController.getName(), getParentActivity(), view, i -> {
+                        try {
+                            LauncherNameController.setName(i);
+                            AlertUtil.showToast(LocaleController.getString(R.string.LauncherNameChanged));
+                        } catch (RuntimeException e) {
+                            org.telegram.messenger.FileLog.e(e);
+                            AlertUtil.showToast(LocaleController.getString(R.string.LauncherNameFailed));
+                        }
+                        listAdapter.notifyItemChanged(launcherNameRow, PARTIAL);
+                    });
+        } else if (position == customTitleRow) {
             setCustomTitle(view, position);
             listAdapter.notifyItemChanged(position, PARTIAL);
         }
@@ -630,6 +644,7 @@ public class GeneralSettingActivity extends BaseActivity {
 
         generalRow = addRow();
         customTitleRow = addRow("customTitle");
+        launcherNameRow = addRow("launcherName");
         showBotAPIRow = addRow("showBotAPI");
         showExactNumberRow = addRow("showExactNumber");
         showExactTimeRow = addRow("showExactTime");
@@ -798,6 +813,9 @@ public class GeneralSettingActivity extends BaseActivity {
                             value = LocaleController.formatPluralString("Languages", langCodes.size());
                         }
                         textCell.setTextAndValue(LocaleController.getString("DoNotTranslate", R.string.DoNotTranslate), value, payload, true);
+                    } else if (position == launcherNameRow) {
+                        textCell.setTextAndValue(LocaleController.getString(R.string.LauncherName),
+                                LauncherNameController.names().get(LauncherNameController.getName()), payload, true);
                     } else if (position == customTitleRow) {
                         textCell.setTextAndValue(LocaleController.getString("customTitle", R.string.customTitle), Config.getCustomTitle(), payload, true);
                     } else if (position == drawerListRow) {
@@ -1012,7 +1030,7 @@ public class GeneralSettingActivity extends BaseActivity {
             if (position == general2Row || position == drawer2Row || position == translator2Row || position == devices2Row || position == stories2Row || position == llmSettings2Row) {
                 return 1;
             } else if (position == tabsTitleTypeRow || position == translationProviderRow || position == deepLFormalityRow || position == translationTargetRow ||
-                position == translatorTypeRow || position == doNotTranslateRow || position == overrideDevicePerformanceRow || position == customTitleRow ||
+                position == translatorTypeRow || position == doNotTranslateRow || position == overrideDevicePerformanceRow || position == customTitleRow || position == launcherNameRow ||
                 position == deepLxApiRow || position == deepLxApiTokenRow || position == deepLxMaxCharactersRow ||
                 position == deepLxRequestsPerSecondRow || position == deepLxTestRow || position == editTextTranslationTargetRow ||
                 position == llmConfigRow) {

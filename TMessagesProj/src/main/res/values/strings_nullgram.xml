@@ -21,6 +21,10 @@
 <resources>
     <string name="NullgramPushService">Nnngram Push Service</string>
     <string name="NullSettings">Nnngram Settings</string>
+    <string name="LauncherName">Launcher name</string>
+    <string name="LauncherNameOriginal">Original name (%1$s)</string>
+    <string name="LauncherNameChanged">Launcher name changed. Your launcher may take a moment to refresh.</string>
+    <string name="LauncherNameFailed">Could not change the launcher name.</string>
     <string name="OfficialChannel">Official Channel</string>
     <string name="Chat">Chat</string>
     <string name="Experiment">Experiment</string>

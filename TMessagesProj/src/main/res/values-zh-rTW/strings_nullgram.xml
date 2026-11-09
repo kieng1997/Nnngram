@@ -20,6 +20,10 @@
 <resources>
     <string name="NullgramPushService">Nnngram 推播服務</string>
     <string name="NullSettings">Nnngram 設定</string>
+    <string name="LauncherName">桌面名稱</string>
+    <string name="LauncherNameOriginal">原始名稱（%1$s）</string>
+    <string name="LauncherNameChanged">桌面名稱已切換，桌面重新整理可能稍有延遲。</string>
+    <string name="LauncherNameFailed">無法切換桌面名稱。</string>
     <string name="OfficialChannel">官方頻道</string>
     <string name="Chat">聊天</string>
     <string name="Experiment">實驗性功能</string>

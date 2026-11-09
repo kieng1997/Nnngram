@@ -20,6 +20,10 @@
 <resources>
     <string name="NullgramPushService">Nullgram 推送服务</string>
     <string name="NullSettings">Nullgram 设置</string>
+    <string name="LauncherName">桌面名称</string>
+    <string name="LauncherNameOriginal">原始名称（%1$s）</string>
+    <string name="LauncherNameChanged">桌面名称已切换，桌面刷新可能稍有延迟。</string>
+    <string name="LauncherNameFailed">无法切换桌面名称。</string>
     <string name="OfficialChannel">官方频道</string>
     <string name="Chat">聊天</string>
     <string name="Experiment">实验性功能</string>

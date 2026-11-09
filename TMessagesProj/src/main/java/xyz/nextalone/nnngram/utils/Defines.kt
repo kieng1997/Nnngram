@@ -278,6 +278,7 @@ object Defines {
 
     @BooleanConfig const val ignoreChatStrict = "ignoreChatStrict"
     @StringConfig("Nnngram") const val customTitle = "customTitle"
+    @IntConfig(0) const val launcherName = "launcherName"
     @StringConfig("") const val textStyleSettings = "textStyleSettings"
     @BooleanConfig const val hideSendAsButton = "hideSendAsButton"
     @BooleanConfig const val hideFilterMuteAll = "hideFilterMuteAll"

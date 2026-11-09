@@ -2,35 +2,21 @@ package org.telegram.ui;
 
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.pm.PackageManager;
-
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+
+import xyz.nextalone.nnngram.helpers.LauncherNameController;
 
 public class LauncherIconController {
     public static void tryFixLauncherIconIfNeeded() {
-        for (LauncherIcon icon : LauncherIcon.values()) {
-            if (isEnabled(icon)) {
-                return;
-            }
-        }
-
-        setIcon(LauncherIcon.DEFAULT);
+        LauncherNameController.repair();
     }
 
     public static boolean isEnabled(LauncherIcon icon) {
-        Context ctx = ApplicationLoader.applicationContext;
-        int i = ctx.getPackageManager().getComponentEnabledSetting(icon.getComponentName(ctx));
-        return i == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || i == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && icon == LauncherIcon.DEFAULT;
+        return LauncherNameController.isEnabled(icon);
     }
 
     public static void setIcon(LauncherIcon icon) {
-        Context ctx = ApplicationLoader.applicationContext;
-        PackageManager pm = ctx.getPackageManager();
-        for (LauncherIcon i : LauncherIcon.values()) {
-            pm.setComponentEnabledSetting(i.getComponentName(ctx), i == icon ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED :
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
-        }
+        LauncherNameController.setIcon(icon);
     }
 
     public enum LauncherIcon {
