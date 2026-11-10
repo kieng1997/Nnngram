@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Original artwork; artwork layers keep within the inner 66dp adaptive safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path
+        android:pathData="M256,150V118"
+        android:strokeColor="#0E3B2C"
+        android:strokeWidth="14"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M256,118m-16,0a16,16 0 1,0 32,0a16,16 0 1,0 -32,0"
+        android:fillColor="#FFC44D" />
+    <path
+        android:pathData="M150,206H132A10,10 0 0 0 122,216V246A10,10 0 0 0 132,256H150Z"
+        android:fillColor="#F4FBF7" />
+    <path
+        android:pathData="M362,206H380A10,10 0 0 1 390,216V246A10,10 0 0 1 380,256H362Z"
+        android:fillColor="#F4FBF7" />
+    <path
+        android:pathData="M194,152H318A44,44 0 0 1 362,196V256A44,44 0 0 1 318,300H194A44,44 0 0 1 150,256V196A44,44 0 0 1 194,152Z"
+        android:fillColor="#F4FBF7" />
+    <path
+        android:pathData="M216,214m-22,0a22,22 0 1,0 44,0a22,22 0 1,0 -44,0"
+        android:fillColor="#0E3B2C" />
+    <path
+        android:pathData="M296,214m-22,0a22,22 0 1,0 44,0a22,22 0 1,0 -44,0"
+        android:fillColor="#0E3B2C" />
+    <path
+        android:pathData="M216,254Q256,286 296,254"
+        android:strokeColor="#0E3B2C"
+        android:strokeWidth="12"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M204,316H308A26,26 0 0 1 334,342V372A26,26 0 0 1 308,398H204A26,26 0 0 1 178,372V342A26,26 0 0 1 204,316Z"
+        android:fillColor="#F4FBF7" />
+    <path
+        android:pathData="M234,356m-12,0a12,12 0 1,0 24,0a12,12 0 1,0 -24,0"
+        android:fillColor="#2FBF6F" />
+    <path
+        android:pathData="M278,356m-12,0a12,12 0 1,0 24,0a12,12 0 1,0 -24,0"
+        android:fillColor="#2FBF6F" />
+</vector>

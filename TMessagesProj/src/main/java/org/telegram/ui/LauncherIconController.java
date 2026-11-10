@@ -26,7 +26,9 @@ public class LauncherIconController {
         COLORFUL("ColorfulIcon", R.mipmap.icon_background_colorful, R.mipmap.icon_foreground_colorful, R.string.AppIconColorful),
         DARKGREEN("DarkGreenIcon", R.mipmap.icon_background_darkgreen, R.mipmap.icon_foreground_darkgreen, R.string.AppIconDarkGreen),
         NEON("NeonIcon", R.mipmap.icon_background_neon, R.mipmap.icon_foreground_neon, R.string.AppIconNeon),
-        NOX("PremiumIcon", R.drawable.icon_3_background_sa, R.mipmap.icon_3_foreground_sa, R.string.AppIconPremium);
+        NOX("PremiumIcon", R.drawable.icon_3_background_sa, R.mipmap.icon_3_foreground_sa, R.string.AppIconPremium),
+        APK_TEST("ApkTestIcon", R.drawable.ic_launcher_nagram_apktest_background, R.drawable.ic_launcher_nagram_apktest_foreground, R.string.AppIconApkTest),
+        ORBIT("OrbitIcon", R.drawable.ic_launcher_nagram_orbit_background, R.drawable.ic_launcher_nagram_orbit_foreground, R.string.AppIconOrbit);
 
 
         public final String key;

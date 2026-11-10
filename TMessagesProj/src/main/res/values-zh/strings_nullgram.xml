@@ -362,6 +362,8 @@
     <string name="AppIconColorful">缤纷</string>
     <string name="AppIconDarkGreen">深翠</string>
     <string name="AppIconNeon">霓虹</string>
+    <string name="AppIconApkTest">APK 测试</string>
+    <string name="AppIconOrbit">星环</string>
     <string name="doNotUnarchiveBySwipe">禁用滑动取消归档</string>
     <string name="hideInputFieldBotButton">隐藏输入框机器人按钮</string>
     <string name="hideMessageSeenTooltip">隐藏消息已读提示</string>

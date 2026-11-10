@@ -374,6 +374,8 @@
     <string name="AppIconColorful">Colorful</string>
     <string name="AppIconDarkGreen">Dark Green</string>
     <string name="AppIconNeon">Neon</string>
+    <string name="AppIconApkTest">APK Test</string>
+    <string name="AppIconOrbit">Orbit</string>
     <string name="doNotUnarchiveBySwipe">Do not unarchive by swipe</string>
     <string name="hideInputFieldBotButton">Hide input field bot button</string>
     <string name="hideMessageSeenTooltip">Hide message seen tooltip</string>

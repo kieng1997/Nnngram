@@ -373,6 +373,8 @@
     <string name="AppIconColorful">繽紛</string>
     <string name="AppIconDarkGreen">深綠色</string>
     <string name="AppIconNeon">霓虹</string>
+    <string name="AppIconApkTest">APK 測試</string>
+    <string name="AppIconOrbit">星環</string>
     <string name="doNotUnarchiveBySwipe">停用滑動取消封存</string>
     <string name="hideInputFieldBotButton">隱藏輸入框機器人按鈕</string>
     <string name="hideMessageSeenTooltip">隱藏訊息已讀提示</string>

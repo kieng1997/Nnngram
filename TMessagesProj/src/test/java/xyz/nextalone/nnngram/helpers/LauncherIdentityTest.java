@@ -9,15 +9,31 @@ public final class LauncherIdentityTest {
     private static final String GOOGLE = "org.telegram.messenger.GoogleIcon";
     private static final String FANGCUN_GOOGLE = "org.telegram.messenger.LauncherName1_GoogleIcon";
     private static final java.util.List<String> ICONS = Arrays.asList(
-            "DefaultIcon", "OFFICIAL", "GoogleIcon", "ColorfulIcon", "DarkGreenIcon", "NeonIcon", "PremiumIcon");
+            "DefaultIcon", "OFFICIAL", "GoogleIcon", "ColorfulIcon", "DarkGreenIcon", "NeonIcon", "PremiumIcon",
+            "ApkTestIcon", "OrbitIcon");
 
     public static void main(String[] args) {
         nameSwitchPreservesIconAndSurvivesRestart();
         iconSwitchPreservesName();
+        newIconsSwitchLikeTheExistingOnes();
         failedSwitchKeepsPreviousEntry();
         startupRepairsEntriesWithoutResettingAValidSelection();
         presetNamesKeepTheInstallLabel();
         System.out.println("OK: launcher selection, restart, failure recovery, startup repair and exact presets");
+    }
+
+    private static void newIconsSwitchLikeTheExistingOnes() {
+        Set<String> enabled = new HashSet<>(Set.of(GOOGLE));
+        LauncherIdentity identity = identity(enabled);
+        identity.selectName(2);
+        identity.selectIcon("ApkTestIcon");
+        check(enabled.equals(Set.of("org.telegram.messenger.LauncherName2_ApkTestIcon")),
+                "switching to the APK test icon retains the selected name");
+        identity.selectIcon("OrbitIcon");
+        check(enabled.equals(Set.of("org.telegram.messenger.LauncherName2_OrbitIcon")),
+                "switching to the orbit icon retains the selected name");
+        check(identity.currentName() == 2 && "OrbitIcon".equals(identity.currentIcon()),
+                "the new icon and its name are observable");
     }
 
     private static void nameSwitchPreservesIconAndSurvivesRestart() {
