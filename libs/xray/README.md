@@ -21,7 +21,7 @@ SOCKS credentials.
 | flow | — | — | `xtls-rprx-vision` (+`-udp443`) over TLS/REALITY tcp |
 | rejected | plugins, UoT, stream ciphers | REALITY, fp, aid≠0, insecure | encryption≠none, other transports/flows, insecure, duplicate/conflicting query params |
 
-VLESS notes (pinned core `v26.10.21`):
+VLESS notes (pinned core `v26.11.9`):
 
 - REALITY client fields: `sni`/`serverName` (aliases, both set = reject),
   `pbk` (required 32-byte X25519 base64url), `sid` (hex, ≤16 chars, empty ok),
@@ -42,12 +42,12 @@ VLESS notes (pinned core `v26.10.21`):
 | what | value |
 |---|---|
 | module | `github.com/xtls/xray-core` |
-| version | `v1.260327.1-0.20261021115930-1b1647cd9ddf` (`go.mod`) |
-| upstream release | `v26.10.21` |
-| commit | `1b1647cd9ddf0abc34b981d4611fc03bcac1ca74` |
+| version | `v1.260327.1-0.20261109052709-676eaf66f8f0` (`go.mod`) |
+| upstream release | `v26.11.9` |
+| commit | `676eaf66f8f05d4d558ee7a74b4736623d3feeb9` |
 | gomobile | `golang.org/x/mobile v0.0.0-20261011034528-197770444867` |
 
-The Go module version is the pseudo-version of the `v26.10.21` release: Xray
+The Go module version is the pseudo-version of the `v26.11.9` release: Xray
 tags releases as `v26.x`, which Go's module proxy rejects, so upstream publishes
 the same commit under a `v1.…` pseudo-version. Source for both is
 `https://github.com/XTLS/Xray-core`. `go.sum` is committed; do not upgrade

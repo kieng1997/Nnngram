@@ -296,8 +296,7 @@ func TestTwoSessionsAndClose(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
-	v := Version()
-	if !strings.HasPrefix(v, "2") && !strings.HasPrefix(v, "1") {
+	if v := Version(); v != "26.11.9" {
 		t.Fatalf("unexpected version: %s", v)
 	}
 }
