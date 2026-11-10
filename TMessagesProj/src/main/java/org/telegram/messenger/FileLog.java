@@ -30,7 +30,7 @@ public class FileLog {
     private OutputStreamWriter streamWriter = null;
     private FastDateFormat dateFormat = null;
     private FastDateFormat fileDateFormat = null;
-    private DispatchQueue logQueue = null;
+    private DispatchQueue2 logQueue = null;
 
     private File currentFile = null;
     private File networkFile = null;

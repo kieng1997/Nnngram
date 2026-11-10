@@ -55,6 +55,11 @@ public final class FirebaseRemovalTest {
         assertMissing(catalog, "catalog firebase config", "firebase-config");
         assertMissing(catalog, "catalog crashlytics", "firebase.crashlytics");
         assertMissing(catalog, "catalog google services", "com.google.gms.google-services");
+        // Upstream 13.2.x ships a Firebase Phone Number Verification SDK and wires it into
+        // phone login. This build keeps the classic code / QR / passkey paths only.
+        assertMissing(catalog, "catalog firebase pnv", "firebase-pnv");
+        assertMissing(catalog, "catalog firebase bom alias", "firebase-bom =");
+        assertMissing(moduleGradle, "firebase pnv dependency", "firebase.pnv");
 
         String ci = read(root, ".github/workflows/ci.yml");
         assertMissing(ci, "CI google-services.json injection", "GOOGLE_SERVICES_JSON");
@@ -85,6 +90,26 @@ public final class FirebaseRemovalTest {
         if (Files.exists(root.resolve("TMessagesProj/src/main/res/raw/tg_keep.xml"))) {
             throw new AssertionError("crashlytics tg_keep.xml still present");
         }
+        // The upstream FPNV helper is SDK-bound and must never be introduced. Note: the
+        // ML Kit / Play services libraries that this app really uses pull in small naming
+        // utilities (firebase-annotations, firebase-components, firebase-encoders*); those
+        // are unrelated to FCM/Crashlytics/RemoteConfig and stay on the classpath.
+        if (Files.exists(root.resolve(JAVA + "org/telegram/messenger/FirebasePhoneNumberVerificationHelper.java"))) {
+            throw new AssertionError("FirebasePhoneNumberVerificationHelper.java still present");
+        }
+        assertMissing(read(root, JAVA + "org/telegram/ui/LoginActivity.java"),
+                "phone login FPNV auto-verification", "FirebasePhoneNumberVerificationHelper");
+        assertMissing(read(root, JAVA + "org/telegram/ui/bots/BotStorage.java"),
+                "bot storage firebase agent publisher", "com.google.firebase");
+        // Upstream 13.2.x moved the debug menu into its own activity. That new entry point must
+        // not resurrect the in-app updater this fork removed (UpdateCheckRemovedTest owns the
+        // rest of that contract: LaunchActivity/Settings/Profile and the legacy cache).
+        String debugMenu = read(root, JAVA + "org/telegram/ui/DebugSettingsActivity.java");
+        assertMissing(debugMenu, "debug menu update check entry", "checkAppUpdate");
+        assertMissing(debugMenu, "debug menu pending update cache", "SharedConfig.pendingAppUpdate");
+        assertMissing(debugMenu, "debug menu update accept", "setNewAppVersionAvailable");
+        assertMissing(read(root, JAVA + "org/telegram/ui/LaunchActivity.java"),
+                "LaunchActivity update check entry", "checkAppUpdate");
 
         // --- disabled push contract: provider stays non-null but truthfully reports no services ---
         String push = read(root, JAVA + "org/telegram/messenger/PushListenerController.java");

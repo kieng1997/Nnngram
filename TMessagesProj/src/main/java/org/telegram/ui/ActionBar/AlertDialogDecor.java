@@ -193,6 +193,7 @@ public class AlertDialogDecor extends AlertDialog {
         }
 
         final Animation animation = loadAnimation(resExitAnimation);
+        contentView.clearAnimation();
         if (animation != null) {
             animation.setAnimationListener(new Animation.AnimationListener() {
                 @Override
@@ -210,7 +211,6 @@ public class AlertDialogDecor extends AlertDialog {
 
                 }
             });
-            contentView.clearAnimation();
             contentView.startAnimation(animation);
         } else {
             contentView.animate().cancel();

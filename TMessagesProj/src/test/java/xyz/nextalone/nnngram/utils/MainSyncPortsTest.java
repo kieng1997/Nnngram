@@ -81,8 +81,12 @@ public final class MainSyncPortsTest {
                 "final int bottom = newInsetsCompat.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()).bottom;");
 
         String popup = read(root, JAVA + "org/telegram/ui/PopupNotificationActivity.java");
-        assertPresent(popup, "popup close button is tinted",
-                "actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);");
+        // 35a371307: the close button must be tinted with the action bar icon color. Upstream
+        // 13.2.x routes the same call through ThemeBind, so accept either spelling.
+        if (!popup.contains("ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarDefaultIcon, false);")
+                && !popup.contains("actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);")) {
+            throw new AssertionError("popup close button is tinted: missing the action bar icon tint");
+        }
         System.out.println("[PASS] viewer resolution/inset fixes and popup close tint are in place");
     }
 
@@ -154,8 +158,12 @@ public final class MainSyncPortsTest {
                 "notificationChannel.setName(channelName)");
         assertMissing(notifications, "no hard-coded internal notifications channel name",
                 "\"Internal notifications\"");
-        assertMissing(read(root, JAVA + "org/telegram/ui/Cells/LocationPoweredCell.java"),
-                "location footer localized", "\"Powered by\"");
+        // Upstream 13.2.x dropped the "Powered by Telegram" location footer entirely
+        // (LocationPoweredCell retired); the resource is kept for the remaining references.
+        if (Files.exists(root.resolve(JAVA + "org/telegram/ui/Cells/LocationPoweredCell.java"))) {
+            assertMissing(read(root, JAVA + "org/telegram/ui/Cells/LocationPoweredCell.java"),
+                    "location footer localized", "\"Powered by\"");
+        }
         assertMissing(read(root, JAVA + "org/telegram/ui/Components/MessagePreviewView.java"),
                 "forward hide-sender notice localized", "without the sender’s name");
         assertMissing(read(root, JAVA + "org/telegram/ui/LaunchActivity.java"),
