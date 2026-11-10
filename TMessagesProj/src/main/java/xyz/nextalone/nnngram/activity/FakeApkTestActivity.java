@@ -34,7 +34,8 @@ import xyz.nextalone.nnngram.helpers.DisguiseTapGate;
 /**
  * Decoy APK-testing screen shown at startup while the disguise toggle is on.
  * It is purely cosmetic: nothing is inspected and the analysis always fails.
- * Only three quick taps on the analyze button reveal the real app.
+ * One long press on the analyze button arms the reveal, then two quick taps open
+ * the real app.
  */
 public class FakeApkTestActivity extends Activity {
 
@@ -126,6 +127,10 @@ public class FakeApkTestActivity extends Activity {
         buttonBackground.setCornerRadius(AndroidUtilities.dp(10));
         analyze.setBackground(buttonBackground);
         analyze.setOnClickListener(v -> onAnalyze());
+        analyze.setOnLongClickListener(v -> {
+            tapGate.onLongPress(SystemClock.elapsedRealtime());
+            return true;
+        });
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(48));
         buttonParams.setMargins(pad, 0, pad, pad);

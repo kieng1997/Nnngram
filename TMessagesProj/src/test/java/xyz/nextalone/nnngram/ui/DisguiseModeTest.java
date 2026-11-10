@@ -34,13 +34,13 @@ public final class DisguiseModeTest {
     public static void main(String[] args) throws Exception {
         Path root = Paths.get(args.length > 0 ? args[0] : ".").toAbsolutePath().normalize();
 
-        // Behaviour: only three taps inside the window unlock the real app.
-        unlockOnThreeFastTaps();
-        ignoreThreeSlowTaps();
-        acceptTapExactlyAtWindowBoundary();
-        ignoreTapOneMillisecondPastWindow();
-        notRetriggeredByTheFourthTap();
-        restartCountingAfterTooOldTap();
+        // Behaviour: short taps only unlock after a long press has armed the gate.
+        ignoreThreeShortTapsWithoutLongPress();
+        unlockOnLongPressThenTwoTaps();
+        acceptTapsExactlyAtWindowBoundary();
+        rejectTapsPastTheWindow();
+        restartSequenceOnRepeatedLongPress();
+        notRetriggeredAfterUnlock();
 
         // Wiring: the toggle, the row, the three locales, the manifest entry and
         // the launch gate must all be in place, or the feature is unreachable.
@@ -154,7 +154,14 @@ public final class DisguiseModeTest {
                 "FakeApkTestActivity.class");
 
         String fake = read(root, JAVA + "xyz/nextalone/nnngram/activity/FakeApkTestActivity.java");
-        assertPresent(fake, "fake page reuses the triple-tap gate", "new DisguiseTapGate(");
+        assertPresent(fake, "fake page reuses the tap gate", "new DisguiseTapGate(");
+        assertPresent(fake, "fake page arms the gate on long press",
+                "tapGate.onLongPress(SystemClock.elapsedRealtime());");
+        assertPresent(fake, "fake page consumes the long press so release is not a tap",
+                "analyze.setOnLongClickListener(v -> {");
+        assertPresent(fake, "long press listener reports the press as handled",
+                "tapGate.onLongPress(SystemClock.elapsedRealtime());\n            return true;");
+        assertPresent(fake, "fake page still analyzes on a plain tap", "analyze.setOnClickListener(v -> onAnalyze());");
         assertPresent(fake, "fake page unlocks with the stored launch intent",
                 "getParcelableExtra(DisguiseLauncher.EXTRA_REAL_LAUNCH_INTENT)");
         assertPresent(fake, "fake page targets the real activity", "LaunchActivity.class");
@@ -225,49 +232,52 @@ public final class DisguiseModeTest {
         }
     }
 
-    private static void unlockOnThreeFastTaps() {
+    private static void ignoreThreeShortTapsWithoutLongPress() {
         DisguiseTapGate gate = new DisguiseTapGate(WINDOW);
-        assertFalse(gate.onTap(1000), "first fast tap unlocks");
-        assertFalse(gate.onTap(1400), "second fast tap unlocks");
-        assertTrue(gate.onTap(1800), "third fast tap unlocks");
+        assertFalse(gate.onTap(1000), "tap 1 without a long press unlocks");
+        assertFalse(gate.onTap(1200), "tap 2 without a long press unlocks");
+        assertFalse(gate.onTap(1400), "tap 3 without a long press unlocks");
     }
 
-    private static void ignoreThreeSlowTaps() {
+    private static void unlockOnLongPressThenTwoTaps() {
         DisguiseTapGate gate = new DisguiseTapGate(WINDOW);
-        assertFalse(gate.onTap(1000), "slow tap 1 unlocks");
-        assertFalse(gate.onTap(1900), "slow tap 2 unlocks");
-        assertFalse(gate.onTap(2600), "slow tap 3 unlocks");
+        gate.onLongPress(1000);
+        assertFalse(gate.onTap(1200), "first tap after the long press unlocks");
+        assertTrue(gate.onTap(1500), "second tap after the long press unlocks");
     }
 
-    private static void acceptTapExactlyAtWindowBoundary() {
+    private static void acceptTapsExactlyAtWindowBoundary() {
         DisguiseTapGate gate = new DisguiseTapGate(WINDOW);
-        assertFalse(gate.onTap(0), "boundary tap 1 unlocks");
-        assertFalse(gate.onTap(700), "boundary tap 2 unlocks");
-        assertTrue(gate.onTap(1500), "tap exactly at the window edge still counts");
+        gate.onLongPress(1000);
+        assertFalse(gate.onTap(2000), "boundary tap 1 unlocks");
+        assertTrue(gate.onTap(2500), "tap exactly at the window edge still counts");
     }
 
-    private static void ignoreTapOneMillisecondPastWindow() {
+    private static void rejectTapsPastTheWindow() {
         DisguiseTapGate gate = new DisguiseTapGate(WINDOW);
-        assertFalse(gate.onTap(0), "past-boundary tap 1 unlocks");
-        assertFalse(gate.onTap(750), "past-boundary tap 2 unlocks");
-        assertFalse(gate.onTap(1501), "tap past the window starts over");
+        gate.onLongPress(1000);
+        assertFalse(gate.onTap(1100), "early tap before the window closes unlocks");
+        assertFalse(gate.onTap(2501), "tap past the window does not unlock");
+        assertFalse(gate.onTap(2600), "a later tap does not resume the stale window");
     }
 
-    private static void notRetriggeredByTheFourthTap() {
+    private static void restartSequenceOnRepeatedLongPress() {
         DisguiseTapGate gate = new DisguiseTapGate(WINDOW);
-        gate.onTap(0);
-        gate.onTap(400);
-        assertTrue(gate.onTap(900), "unlock before checking the fourth tap");
-        assertFalse(gate.onTap(950), "fourth tap immediately after unlock unlocks again");
+        gate.onLongPress(1000);
+        assertFalse(gate.onTap(1200), "tap before the second long press unlocks");
+        gate.onLongPress(2000);
+        assertFalse(gate.onTap(2100), "first tap of the restarted sequence unlocks");
+        assertTrue(gate.onTap(2400), "second tap of the restarted sequence unlocks");
     }
 
-    private static void restartCountingAfterTooOldTap() {
+    private static void notRetriggeredAfterUnlock() {
         DisguiseTapGate gate = new DisguiseTapGate(WINDOW);
-        assertFalse(gate.onTap(0), "restart tap 1 unlocks");
-        assertFalse(gate.onTap(500), "restart tap 2 unlocks");
-        assertFalse(gate.onTap(2100), "stale tap 3 unlocks");
-        assertFalse(gate.onTap(2300), "restart tap 4 unlocks");
-        assertTrue(gate.onTap(2500), "three fresh taps after the gap unlock");
+        gate.onLongPress(1000);
+        gate.onTap(1100);
+        assertTrue(gate.onTap(1200), "unlock before checking later events");
+        assertFalse(gate.onTap(1300), "a later tap unlocks again");
+        gate.onLongPress(1400);
+        assertFalse(gate.onTap(1500), "a long press after unlock re-arms the gate");
     }
 
     private static void assertTrue(boolean actual, String label) {
