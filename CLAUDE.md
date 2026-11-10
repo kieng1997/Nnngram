@@ -4,6 +4,15 @@ Telegram Android fork。直接基于 **Telegram official Android client** (`DrKL
 
 > 历史上 fork 链是 `Telegram → Nullgram → Nnngram`，但目前 **不再依赖 Nullgram 仓库**，所有 fork-only 代码在本仓库内独立维护，merge 只对接 upstream Telegram。
 
+## 分支策略
+
+| 分支 | 角色 |
+|---|---|
+| `main` | **仅用于同步 fork 来源**：跟随 upstream Telegram 对齐，不在其上做日常开发。 |
+| `dev` | **主要开发分支**：fork-only 功能、设置项与修复都在这里进行。 |
+
+从 `main` 同步改动到 `dev` 时，需要逐项审阅并保留 `dev` 已有的 fork 功能，避免整文件覆盖。
+
 ## 仓库结构
 
 | 路径 | 角色 |

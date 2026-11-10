@@ -384,6 +384,7 @@ import xyz.nextalone.nnngram.config.DialogConfig;
 import xyz.nextalone.nnngram.config.ForwardContext;
 import xyz.nextalone.nnngram.helpers.MessageHelper;
 import xyz.nextalone.nnngram.helpers.MessageMenuCompact;
+import xyz.nextalone.nnngram.helpers.MessageSaveEligibility;
 import xyz.nextalone.nnngram.helpers.MentionReadHelper;
 import xyz.nextalone.nnngram.helpers.QrHelper;
 import xyz.nextalone.nnngram.helpers.TranslateHelper;
@@ -12798,6 +12799,12 @@ public class ChatActivity extends BaseFragment implements
         return selectedMessagesIds[0].size() > 0 || selectedMessagesIds[1].size() > 0;
     }
 
+    private boolean canSaveSelectedMessage(MessageObject messageObject) {
+        return MessageSaveEligibility.canSave(Config.ignoreChatStrict, isPeerNoForwards(),
+                messageObject.messageOwner != null && messageObject.messageOwner.noforwards,
+                messageObject.isRoundOnce(), messageObject.isVoiceOnce());
+    }
+
     private boolean hasSelectedNoforwardsMessage() {
         try {
             for (int i = 0; i < selectedMessagesIds.length; ++i) {
@@ -19923,9 +19930,9 @@ public class ChatActivity extends BaseFragment implements
                     } else {
                         canForwardMessagesCount--;
                     }
-                    if (messageObject.isMusic()) {
+                    if (messageObject.isMusic() && canSaveSelectedMessage(messageObject)) {
                         canSaveMusicCount--;
-                    } else if (messageObject.isDocument()) {
+                    } else if (messageObject.isDocument() && canSaveSelectedMessage(messageObject)) {
                         canSaveDocumentsCount--;
                     } else {
                         cantSaveMessagesCount--;
@@ -19960,9 +19967,9 @@ public class ChatActivity extends BaseFragment implements
                     } else {
                         canForwardMessagesCount++;
                     }
-                    if (messageObject.isMusic()) {
+                    if (messageObject.isMusic() && canSaveSelectedMessage(messageObject)) {
                         canSaveMusicCount++;
-                    } else if (messageObject.isDocument() && !messageObject.isRoundOnce() && !messageObject.isVoiceOnce()) {
+                    } else if (messageObject.isDocument() && canSaveSelectedMessage(messageObject)) {
                         canSaveDocumentsCount++;
                     } else {
                         cantSaveMessagesCount++;
@@ -35020,10 +35027,11 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case OPTION_REPLY: {
-                if (selectedObject != null && selectedObject.messageOwner != null && selectedObject.messageOwner.noforwards) {
-                    return;
-                }
                 if (selectedObject != null && currentChat != null && (ChatObject.isNotInChat(currentChat) && !ChatObject.isMonoForum(currentChat) && !isThreadChat() || ChatObject.isChannel(currentChat) && !ChatObject.canPost(currentChat) && !currentChat.megagroup || !ChatObject.canSendMessages(currentChat))) {
+                    // quoting a protected message in another chat would leak its content
+                    if (selectedObject.messageOwner != null && selectedObject.messageOwner.noforwards) {
+                        return;
+                    }
                     MessageObject messageObject = selectedObject;
                     if (messageObject.getGroupId() != 0) {
                         MessageObject.GroupedMessages group = getGroup(messageObject.getGroupId());

@@ -4858,8 +4858,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         ViewCompat.setOnApplyWindowInsetsListener(containerView, (v, newInsetsCompat) -> {
             final Rect oldInsets = new Rect(insets);
             final Insets r = AndroidUtilities.getDefaultWindowInsets(newInsetsCompat, false);
+            // don't reserve space for a navigation bar hidden in fullscreen, so landscape video can use it
+            final int bottom = newInsetsCompat.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()).bottom;
 
-            insets.set(r.left, r.top, r.right, r.bottom);
+            insets.set(r.left, r.top, r.right, bottom);
 
             int newTopInset = insets.top;
             if (!oldInsets.equals(insets)) {
@@ -11513,6 +11515,11 @@ accountInstance.getUserConfig().getClientUserId(), false, false, true, 0, 0);
         }
     }
 
+    // a live photo is edited on top of its still image, which is also sent as the photo
+    private static int editBaseSize(MediaController.MediaEditState entry) {
+        return entry.isLivePhoto() ? AndroidUtilities.getPhotoSize() : thumbSize;
+    }
+
     private void applyCurrentEditMode() {
         if (currentIndex < 0 || currentIndex >= imagesArrLocals.size()) {
             return;
@@ -11536,9 +11543,9 @@ accountInstance.getUserConfig().getClientUserId(), false, false, true, 0, 0);
             }
             if (isCurrentVideo) {
                 if (!TextUtils.isEmpty(entry.filterPath)) {
-                    bitmap = ImageLoader.loadBitmap(entry.filterPath, null, thumbSize, thumbSize, true);
+                    bitmap = ImageLoader.loadBitmap(entry.filterPath, null, editBaseSize(entry), editBaseSize(entry), true);
                 } else if (entry.isLivePhoto() && !TextUtils.isEmpty(entry.getPath())) {
-                    bitmap = ImageLoader.loadBitmap(entry.getPath(), null, thumbSize, thumbSize, true);
+                    bitmap = ImageLoader.loadBitmap(entry.getPath(), null, editBaseSize(entry), editBaseSize(entry), true);
                 } else {
                     if (sendPhotoType == SELECT_TYPE_AVATAR) {
                         orientation = new int[1];
@@ -11761,12 +11768,12 @@ accountInstance.getUserConfig().getClientUserId(), false, false, true, 0, 0);
                 Bitmap originalBitmap;
                 if (entry.filterPath == null) {
                     if (entry.isLivePhoto() && !TextUtils.isEmpty(entry.getPath())) {
-                        originalBitmap = ImageLoader.loadBitmap(entry.getPath(), null, thumbSize, thumbSize, true);
+                        originalBitmap = ImageLoader.loadBitmap(entry.getPath(), null, editBaseSize(entry), editBaseSize(entry), true);
                     } else {
                         originalBitmap = SendMessagesHelper.createVideoThumbnailAtTime(entry.getPath(), (long) (videoTimelineView.getLeftProgress() * videoPlayer.getDuration() * 1000L));
                     }
                 } else {
-                    originalBitmap = ImageLoader.loadBitmap(entry.filterPath, null, thumbSize, thumbSize, true);
+                    originalBitmap = ImageLoader.loadBitmap(entry.filterPath, null, editBaseSize(entry), editBaseSize(entry), true);
                 }
                 croppedBitmap = entry.cropState != null ? createCroppedBitmap(originalBitmap, entry.cropState, null, true) : originalBitmap;
                 if (entry.cropState != null) {
@@ -20046,7 +20053,7 @@ accountInstance.getUserConfig().getClientUserId(), false, false, true, 0, 0);
                     width *= scale;
                     height *= scale;
                     centerImage.setImageCoords(-width / 2, -height / 2, width, height);
-                    if (isCurrentVideo && (!centerImageIsLivePhoto || isUnalivePhoto())) {
+                    if (isCurrentVideo && (!centerImageIsLivePhoto || isUnalivePhoto() && sendPhotoType == SELECT_TYPE_AVATAR)) {
                         centerImage.draw(canvas);
                         centerImageTransformLocked = true;
                     } else {
