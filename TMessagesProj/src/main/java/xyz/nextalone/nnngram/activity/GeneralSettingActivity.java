@@ -132,6 +132,7 @@ public class GeneralSettingActivity extends BaseActivity {
     private int showProxyEntryInDrawerRow;
     private int hideFilterMuteAllRow;
     private int showIdAndDcRow;
+    private int disguiseModeRow;
 
     private int devicesRow;
     private int useSystemEmojiRow;
@@ -486,6 +487,11 @@ public class GeneralSettingActivity extends BaseActivity {
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(Config.showIdAndDc);
             }
+        } else if (position == disguiseModeRow) {
+            Config.toggleDisguiseMode();
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(Config.disguiseMode);
+            }
         } else if (position == llmConfigRow) {
             presentFragment(new LLMSettingActivity());
         }
@@ -664,6 +670,7 @@ public class GeneralSettingActivity extends BaseActivity {
         hideProxyEntryInTitleRow = addRow();
         showProxyEntryInDrawerRow = addRow("showProxyEntryInDrawer");
         showIdAndDcRow = addRow("showIdAndDc");
+        disguiseModeRow = addRow("disguiseMode");
         general2Row = addRow();
 
         devicesRow = addRow();
@@ -947,6 +954,8 @@ public class GeneralSettingActivity extends BaseActivity {
                         textCell.setTextAndCheck(LocaleController.getString(R.string.showProxyEntryInDrawer), Config.showProxyEntryInDrawer, true);
                     } else if (position == showIdAndDcRow) {
                         textCell.setTextAndCheck(LocaleController.getString(R.string.showIdAndDc), Config.showIdAndDc, true);
+                    } else if (position == disguiseModeRow) {
+                        textCell.setTextAndCheck(LocaleController.getString("disguiseMode", R.string.disguiseMode), Config.disguiseMode, true);
                     }
                     break;
                 }

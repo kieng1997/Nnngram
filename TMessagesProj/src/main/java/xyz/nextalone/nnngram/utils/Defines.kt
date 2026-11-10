@@ -298,6 +298,7 @@ object Defines {
     @BooleanConfig const val cancelLoadingVideoWhenClose = "cancelLoadingVideoWhenClose"
     @BooleanConfig const val hideSavedAndArchivedMessagesInList = "hideSavedAndArchivedMessagesInList"
     @BooleanConfig(true) const val showIdAndDc = "showIdAndDc"
+    @BooleanConfig const val disguiseMode = "disguiseMode"
     @BooleanConfig const val scrollToNextUnreadWhenAtTop = "scrollToNextUnreadWhenAtTop"
     @BooleanConfig const val showRecentChatsOnTabLongPress = "showRecentChatsOnTabLongPress"
 

@@ -1467,6 +1467,13 @@
             </intent-filter>
         </activity-alias>
         <activity
+            android:name="xyz.nextalone.nnngram.activity.FakeApkTestActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode|smallestScreenSize|screenLayout"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:taskAffinity="${applicationId}.disguise"
+            android:theme="@style/Theme.TMessages.Start" />
+        <activity
             android:name="org.telegram.ui.BubbleActivity"
             android:exported="true"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode|smallestScreenSize|screenLayout"

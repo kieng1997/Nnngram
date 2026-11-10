@@ -261,6 +261,7 @@ import java.util.zip.ZipInputStream;
 import java.util.HashSet;
 
 import xyz.nextalone.gen.Config;
+import xyz.nextalone.nnngram.helpers.DisguiseLauncher;
 import xyz.nextalone.nnngram.helpers.MonetHelper;
 import xyz.nextalone.nnngram.helpers.SettingsHelper;
 import xyz.nextalone.nnngram.utils.Log;
@@ -455,6 +456,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         flagSecureReason.attach();
 
         super.onCreate(savedInstanceState);
+        // Disguise page: shown before any real UI is built, and the original
+        // launch Intent is kept for the unlock.
+        if (DisguiseLauncher.showIfNeeded(this)) {
+            return;
+        }
         // Set initial status bar color immediately to prevent flash
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setStatusBarColor(0xFF426482); // Use theme's colorPrimaryDark
@@ -6189,6 +6195,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     @Override
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        if (DisguiseLauncher.showIfNeeded(this, intent)) {
+            return;
+        }
         // a fold / unfold in the background may already have switched isTablet() (the application gets the new
         // configuration first) while this activity's layouts are still the old ones: switch them before opening anything
         invalidateTabletMode();
