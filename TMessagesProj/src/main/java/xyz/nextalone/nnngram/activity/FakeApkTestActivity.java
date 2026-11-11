@@ -30,6 +30,7 @@ import org.telegram.ui.LaunchActivity;
 
 import xyz.nextalone.nnngram.helpers.DisguiseLauncher;
 import xyz.nextalone.nnngram.helpers.DisguiseTapGate;
+import xyz.nextalone.nnngram.helpers.LauncherNameController;
 
 /**
  * Decoy APK-testing screen shown at startup while the disguise toggle is on.
@@ -51,6 +52,7 @@ public class FakeApkTestActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        LauncherNameController.applyTaskLabel(this);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(buildContent());
         showStatus(R.string.FakeApkStatus);

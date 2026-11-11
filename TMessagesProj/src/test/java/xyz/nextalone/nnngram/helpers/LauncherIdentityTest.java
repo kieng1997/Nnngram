@@ -19,7 +19,19 @@ public final class LauncherIdentityTest {
         failedSwitchKeepsPreviousEntry();
         startupRepairsEntriesWithoutResettingAValidSelection();
         presetNamesKeepTheInstallLabel();
-        System.out.println("OK: launcher selection, restart, failure recovery, startup repair and exact presets");
+        taskLabelFollowsTheSelectedName();
+        System.out.println("OK: launcher selection, restart, failure recovery, startup repair, exact presets and task label");
+    }
+
+    /** Recents shows the launcher label, so the task title must be the selected preset. */
+    private static void taskLabelFollowsTheSelectedName() {
+        check("ApkTest".equals(LauncherIdentity.label("NnngramX", 3)), "task title uses the selected preset");
+        check("NnngramX".equals(LauncherIdentity.label("NnngramX", 0)),
+                "the original preset keeps the real install label, not the UI hint");
+        check("NnngramX".equals(LauncherIdentity.label("NnngramX", 42)),
+                "an unknown saved name falls back to the install label");
+        check("NnngramX".equals(LauncherIdentity.label("NnngramX", -1)),
+                "a missing saved name falls back to the install label");
     }
 
     private static void newIconsSwitchLikeTheExistingOnes() {

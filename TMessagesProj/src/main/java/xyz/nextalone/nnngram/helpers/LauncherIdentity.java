@@ -25,6 +25,10 @@ public final class LauncherIdentity {
                 "RAM", "软件驱动", "GitHub", "软件商店", "OneDrive");
     }
 
+    public static String label(String originalName, int name) {
+        return name > 0 && name < NAME_COUNT ? names(originalName).get(name) : originalName;
+    }
+
     public static String componentName(String icon, int name) {
         if (name < 0 || name >= NAME_COUNT) throw new IllegalArgumentException("Unknown launcher name: " + name);
         return "org.telegram.messenger." + (name == 0 ? icon : "LauncherName" + name + "_" + icon);

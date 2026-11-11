@@ -1,5 +1,7 @@
 package xyz.nextalone.nnngram.helpers;
 
+import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -8,6 +10,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LauncherIconController.LauncherIcon;
 
 import java.util.ArrayList;
@@ -65,5 +68,23 @@ public final class LauncherNameController {
         LauncherIdentity identity = identity();
         identity.selectIcon(icon.key);
         Config.setLauncherName(identity.currentName());
+    }
+
+    public static ActivityManager.TaskDescription taskDescription() {
+        String original = ApplicationLoader.applicationContext.getString(R.string.NnnAppLabel);
+        String label = LauncherIdentity.label(original, Config.getLauncherName());
+        return new ActivityManager.TaskDescription(label, null,
+                Theme.getColor(Theme.key_actionBarDefault) | 0xff000000);
+    }
+
+    public static void applyTaskLabel(Activity activity) {
+        if (activity == null) {
+            return;
+        }
+        try {
+            activity.setTaskDescription(taskDescription());
+        } catch (RuntimeException e) {
+            FileLog.e(e);
+        }
     }
 }

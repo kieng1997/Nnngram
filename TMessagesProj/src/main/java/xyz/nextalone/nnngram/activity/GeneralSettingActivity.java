@@ -171,6 +171,7 @@ public class GeneralSettingActivity extends BaseActivity {
                     LauncherNameController.getName(), getParentActivity(), view, i -> {
                         try {
                             LauncherNameController.setName(i);
+                            LauncherNameController.applyTaskLabel(getParentActivity());
                             AlertUtil.showToast(LocaleController.getString(R.string.LauncherNameChanged));
                         } catch (RuntimeException e) {
                             org.telegram.messenger.FileLog.e(e);

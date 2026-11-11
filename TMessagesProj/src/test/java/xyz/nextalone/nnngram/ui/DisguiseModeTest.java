@@ -51,6 +51,7 @@ public final class DisguiseModeTest {
         assertLaunchGateWired(root);
         assertWarmReopenGated(root);
         assertFakePageLayout(root);
+        assertRecentsTitleFollowsTheSelectedName(root);
 
         System.out.println("OK: disguise tap gate and wiring");
     }
@@ -180,6 +181,50 @@ public final class DisguiseModeTest {
         assertTrue(newIntent >= 0, "LaunchActivity overrides onNewIntent(Intent)");
         assertTrue(gate > newIntent, "warm reopen consults the disguise gate");
         assertTrue(handle > gate, "the gate runs before the incoming Intent is handled");
+    }
+
+    /**
+     * Recents must show the selected launcher name on both the decoy and the real
+     * task, and a theme update must not drop it again. Source/wiring check: the
+     * Android task-description call is a one-line platform API, while the naming
+     * rule itself is covered by {@code LauncherIdentityTest}.
+     */
+    private static void assertRecentsTitleFollowsTheSelectedName(Path root) throws IOException {
+        String controller = read(root, JAVA + "xyz/nextalone/nnngram/helpers/LauncherNameController.java");
+        assertPresent(controller, "recents title resolves the selected preset",
+                "LauncherIdentity.label(");
+        assertPresent(controller, "recents title reads the saved selection",
+                "Config.getLauncherName()");
+        assertPresent(controller, "recents title uses the real install label",
+                "R.string.NnnAppLabel");
+        assertPresent(controller, "recents title keeps the existing theme color",
+                "Theme.getColor(Theme.key_actionBarDefault) | 0xff000000");
+        assertPresent(controller, "renaming syncs the running task title",
+                "public static void applyTaskLabel(Activity activity)");
+        assertPresent(controller, "the task title is actually submitted to the platform",
+                "activity.setTaskDescription(taskDescription());");
+
+        String launch = read(root, JAVA + "org/telegram/ui/LaunchActivity.java");
+        assertTrue(!launch.contains("new ActivityManager.TaskDescription(null, null"),
+                "startup and theme updates must not reset the recents title");
+        assertTrue(count(launch, "LauncherNameController.taskDescription()") >= 2,
+                "startup and theme updates both keep the selected recents title");
+
+        String fake = read(root, JAVA + "xyz/nextalone/nnngram/activity/FakeApkTestActivity.java");
+        assertPresent(fake, "the decoy task shows the same recents title",
+                "LauncherNameController.applyTaskLabel(this);");
+
+        String general = read(root, JAVA + "xyz/nextalone/nnngram/activity/GeneralSettingActivity.java");
+        assertPresent(general, "renaming updates the running task title",
+                "LauncherNameController.applyTaskLabel(getParentActivity());");
+    }
+
+    private static int count(String source, String needle) {
+        int found = 0;
+        for (int at = source.indexOf(needle); at >= 0; at = source.indexOf(needle, at + needle.length())) {
+            found++;
+        }
+        return found;
     }
 
     /**
