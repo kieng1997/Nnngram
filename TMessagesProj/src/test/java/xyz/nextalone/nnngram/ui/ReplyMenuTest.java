@@ -163,7 +163,6 @@ public final class ReplyMenuTest {
                         public final TLRPC.Message messageOwner = new TLRPC.Message();
                         public MessageObject(boolean noforwards) { messageOwner.noforwards = noforwards; }
                         public long getGroupId() { return 0; }
-                        public Object getFromPeer() { return null; }
                         public static class GroupedMessages { public MessageObject captionMessage; }
                     }
 
@@ -194,14 +193,6 @@ public final class ReplyMenuTest {
                         public void setDelegate(ChatActivity activity) { }
                     }
 
-                    public static class DialogObject {
-                        public static long getPeerDialogId(Object peer) { return 0; }
-                    }
-
-                    public static class UserConfig {
-                        public long getClientUserId() { return 1; }
-                    }
-
                     public MessageObject selectedObject;
                     public Chat currentChat;
                     public MessageObject replyingMessageObject;
@@ -209,8 +200,7 @@ public final class ReplyMenuTest {
 
                     public boolean isThreadChat() { return false; }
                     public MessageObject.GroupedMessages getGroup(long id) { return null; }
-                    public long getDialogId() { return 2; }
-                    public UserConfig getUserConfig() { return new UserConfig(); }
+                    private void putReplyToArgs(Bundle args, MessageObject message) { }
                     public void presentFragment(DialogsActivity fragment) { outcome = "CROSS_CHAT"; }
                     public void showFieldPanelForReply(MessageObject message) { outcome = "FIELD_PANEL"; }
 

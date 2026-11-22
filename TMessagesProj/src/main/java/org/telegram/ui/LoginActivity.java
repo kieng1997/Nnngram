@@ -3510,7 +3510,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (!isRequestingFirebaseSms) {
                     needHideProgress(false);
                 }
-            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
+            }), ConnectionsManager.RequestFlagDoNotWaitFloodWait | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
             needShowProgress(reqId);
         }
 

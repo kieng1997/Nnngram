@@ -323,6 +323,8 @@ android {
     }
 
     buildFeatures {
+        // IWidgetEngine: the widget engine's isolated process (WidgetEngineService).
+        aidl = true
         buildConfig = true
     }
 
