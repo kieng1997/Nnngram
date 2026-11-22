@@ -57,7 +57,7 @@ public class FakeApkTestActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        LauncherNameController.applyTaskLabel(this);
+        LauncherNameController.applyTaskIdentity(this);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(buildContent());
         showStatus(R.string.FakeApkStatus);

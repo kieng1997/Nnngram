@@ -5,7 +5,11 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 
+import androidx.core.graphics.drawable.DrawableKt;
+
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -71,10 +75,35 @@ public final class LauncherNameController {
     }
 
     public static ActivityManager.TaskDescription taskDescription() {
-        String original = ApplicationLoader.applicationContext.getString(R.string.NnnAppLabel);
+        return taskDescription(0);
+    }
+
+    private static ActivityManager.TaskDescription taskDescription(int iconResource) {
+        Context context = ApplicationLoader.applicationContext;
+        String original = context.getString(R.string.NnnAppLabel);
         String label = LauncherIdentity.label(original, Config.getLauncherName());
-        return new ActivityManager.TaskDescription(label, null,
-                Theme.getColor(Theme.key_actionBarDefault) | 0xff000000);
+        int color = Theme.getColor(Theme.key_actionBarDefault) | 0xff000000;
+        Bitmap icon = null;
+        if (iconResource != 0) {
+            // Launcher3 Recents reads task-description bitmaps, not resource IDs.
+            int iconSize = AndroidUtilities.dp(48);
+            icon = DrawableKt.toBitmap(context.getDrawable(iconResource), iconSize, iconSize, Bitmap.Config.ARGB_8888);
+        }
+        return new ActivityManager.TaskDescription(label, icon, color);
+    }
+
+    public static void applyTaskIdentity(Activity activity) {
+        try {
+            // Every name preset shares the artwork of its original-name alias, even when that alias is disabled.
+            String aliasName = LauncherIdentity.componentName(identity().currentIcon(), 0);
+            ComponentName alias = new ComponentName(activity, aliasName);
+            int iconResource = activity.getPackageManager()
+                    .getActivityInfo(alias, PackageManager.MATCH_DISABLED_COMPONENTS).getIconResource();
+            activity.setTaskDescription(taskDescription(iconResource));
+        } catch (PackageManager.NameNotFoundException | RuntimeException e) {
+            FileLog.e(e);
+            applyTaskLabel(activity);
+        }
     }
 
     public static void applyTaskLabel(Activity activity) {

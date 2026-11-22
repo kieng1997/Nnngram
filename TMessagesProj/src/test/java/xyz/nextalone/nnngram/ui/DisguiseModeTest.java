@@ -51,7 +51,7 @@ public final class DisguiseModeTest {
         assertFakePageStrings(root);
         assertWarmReopenGated(root);
         assertFakePageLayout(root);
-        assertRecentsTitleFollowsTheSelectedName(root);
+        assertRecentsFollowsLauncherIdentity(root);
 
         System.out.println("OK: disguise tap gate and wiring");
     }
@@ -196,13 +196,7 @@ public final class DisguiseModeTest {
         assertTrue(handle > gate, "the gate runs before the incoming Intent is handled");
     }
 
-    /**
-     * Recents must show the selected launcher name on both the decoy and the real
-     * task, and a theme update must not drop it again. Source/wiring check: the
-     * Android task-description call is a one-line platform API, while the naming
-     * rule itself is covered by {@code LauncherIdentityTest}.
-     */
-    private static void assertRecentsTitleFollowsTheSelectedName(Path root) throws IOException {
+    private static void assertRecentsFollowsLauncherIdentity(Path root) throws IOException {
         String controller = read(root, JAVA + "xyz/nextalone/nnngram/helpers/LauncherNameController.java");
         assertPresent(controller, "recents title resolves the selected preset",
                 "LauncherIdentity.label(");
@@ -224,8 +218,18 @@ public final class DisguiseModeTest {
                 "startup and theme updates both keep the selected recents title");
 
         String fake = read(root, JAVA + "xyz/nextalone/nnngram/activity/FakeApkTestActivity.java");
-        assertPresent(fake, "the decoy task shows the same recents title",
-                "LauncherNameController.applyTaskLabel(this);");
+        assertPresent(fake, "the decoy task applies the selected launcher name and icon",
+                "LauncherNameController.applyTaskIdentity(this);");
+        assertPresent(controller, "the task icon uses the currently selected desktop artwork",
+                "LauncherIdentity.componentName(identity().currentIcon(), 0)");
+        assertPresent(controller, "icon metadata can be read even when the original-name alias is disabled",
+                "PackageManager.MATCH_DISABLED_COMPONENTS).getIconResource()");
+        assertPresent(controller, "the selected icon is included in the platform task description",
+                "activity.setTaskDescription(taskDescription(iconResource));");
+        assertPresent(controller, "the selected drawable is rendered as a bitmap for recents",
+                "DrawableKt.toBitmap(context.getDrawable(iconResource)");
+        assertPresent(controller, "the platform receives the bitmap rather than its resource ID",
+                "new ActivityManager.TaskDescription(label, icon, color)");
 
         String general = read(root, JAVA + "xyz/nextalone/nnngram/activity/GeneralSettingActivity.java");
         assertPresent(general, "renaming updates the running task title",
