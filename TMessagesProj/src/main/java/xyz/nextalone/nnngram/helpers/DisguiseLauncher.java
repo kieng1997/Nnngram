@@ -66,7 +66,7 @@ public final class DisguiseLauncher {
             }
         }
         activity.startActivity(fake);
-        activity.finish();
+        activity.finishAndRemoveTask();
         return true;
     }
 

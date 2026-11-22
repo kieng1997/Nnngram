@@ -46,9 +46,9 @@ public final class DisguiseModeTest {
         // the launch gate must all be in place, or the feature is unreachable.
         assertToggleDeclared(root);
         assertSettingsRowWired(root);
-        assertFakePageStrings(root);
         assertManifestEntry(root);
         assertLaunchGateWired(root);
+        assertFakePageStrings(root);
         assertWarmReopenGated(root);
         assertFakePageLayout(root);
         assertRecentsTitleFollowsTheSelectedName(root);
@@ -81,7 +81,8 @@ public final class DisguiseModeTest {
 
     private static void assertFakePageStrings(Path root) throws IOException {
         String[] keys = {"disguiseMode", "FakeApkTitle", "FakeApkSubtitle", "FakeApkInfoLabel",
-                "FakeApkStatus", "FakeApkAnalyzing", "FakeApkAnalysisFailed", "FakeApkAnalyze"};
+                "FakeApkStatus", "FakeApkAnalyzing", "FakeApkAnalysisFailed", "FakeApkAnalyze",
+                "FakeApkAnalysisLabel", "FakeApkAnalysisScope"};
         for (String locale : new String[]{"values", "values-zh", "values-zh-rTW"}) {
             String xml = read(root, RES + locale + "/strings_nullgram.xml");
             for (String key : keys) {
@@ -116,8 +117,10 @@ public final class DisguiseModeTest {
         }
         assertTrue("false".equals(fake.getAttributeNS(ANDROID, "exported")),
                 "fake page activity must not be exported");
-        assertTrue("true".equals(fake.getAttributeNS(ANDROID, "excludeFromRecents")),
-                "fake page task must stay out of recents");
+        assertTrue(!"true".equals(fake.getAttributeNS(ANDROID, "excludeFromRecents")),
+                "the decoy is the active recents entry while it is displayed");
+        assertTrue("${applicationId}.disguise".equals(fake.getAttributeNS(ANDROID, "taskAffinity")),
+                "the decoy and real tasks have separate affinities so each can retire independently");
         org.w3c.dom.NodeList categories = fake.getElementsByTagName("category");
         for (int i = 0; i < categories.getLength(); i++) {
             String name = ((org.w3c.dom.Element) categories.item(i)).getAttributeNS(ANDROID, "name");
@@ -148,21 +151,31 @@ public final class DisguiseModeTest {
         assertPresent(launcher, "gate copies the original launch intent",
                 "new Intent(intent)");
         assertPresent(launcher, "gate opens the decoy in its own task",
-                "Intent.FLAG_ACTIVITY_CLEAR_TASK");
+                "fake.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)");
         assertTrue(!launcher.contains("disguise_unlocked") && !launcher.contains("getBooleanExtra"),
                 "no public Intent extra can unlock the gate");
         assertPresent(launcher, "gate starts the fake page",
                 "FakeApkTestActivity.class");
+        assertPresent(launcher, "opening the decoy retires the real task and its recents entry",
+                "activity.startActivity(fake);\n        activity.finishAndRemoveTask();");
 
         String fake = read(root, JAVA + "xyz/nextalone/nnngram/activity/FakeApkTestActivity.java");
         assertPresent(fake, "fake page reuses the tap gate", "new DisguiseTapGate(");
-        assertPresent(fake, "fake page arms the gate on long press",
-                "tapGate.onLongPress(SystemClock.elapsedRealtime());");
-        assertPresent(fake, "fake page consumes the long press so release is not a tap",
-                "analyze.setOnLongClickListener(v -> {");
-        assertPresent(fake, "long press listener reports the press as handled",
+        assertPresent(fake, "the gesture uses the Size info row, without a separate button",
+                "LinearLayout sizeRow = addInfoRow(card, \"Size\", ");
+        assertPresent(fake, "the Size row handles the long press",
+                "sizeRow.setOnLongClickListener(v -> {");
+        assertPresent(fake, "long press is consumed so release is not a tap",
                 "tapGate.onLongPress(SystemClock.elapsedRealtime());\n            return true;");
+        assertPresent(fake, "short taps on Size unlock only after the gesture",
+                "sizeRow.setOnClickListener(v -> {\n            if (tapGate.onTap(SystemClock.elapsedRealtime())) {\n                openRealApp();");
+        assertTrue(!fake.contains("analyze.setOnLongClickListener") && count(fake, "tapGate.onTap(") == 1,
+                "Analyze does not participate in the gesture");
         assertPresent(fake, "fake page still analyzes on a plain tap", "analyze.setOnClickListener(v -> onAnalyze());");
+        assertPresent(fake, "unlocking starts a fresh real task",
+                "real.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)");
+        assertPresent(fake, "unlocking retires the decoy task and its recents entry",
+                "startActivity(real);\n        finishAndRemoveTask();");
         assertPresent(fake, "fake page unlocks with the stored launch intent",
                 "getParcelableExtra(DisguiseLauncher.EXTRA_REAL_LAUNCH_INTENT)");
         assertPresent(fake, "fake page targets the real activity", "LaunchActivity.class");
@@ -233,7 +246,7 @@ public final class DisguiseModeTest {
      */
     private static void assertFakePageLayout(Path root) throws IOException {
         String fake = read(root, JAVA + "xyz/nextalone/nnngram/activity/FakeApkTestActivity.java");
-        int row = fake.indexOf("private void addInfoRow(");
+        int row = fake.indexOf("private LinearLayout addInfoRow(");
         int rowEnd = fake.indexOf("private void onAnalyze()", row);
         assertTrue(row >= 0 && rowEnd > row, "fake page keeps an info row builder");
         String rowSource = fake.substring(row, rowEnd);

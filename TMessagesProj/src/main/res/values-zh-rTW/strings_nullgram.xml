@@ -535,6 +535,8 @@
     <string name="FakeApkTitle">APK 測試</string>
     <string name="FakeApkSubtitle">相容性檢測工具</string>
     <string name="FakeApkInfoLabel">應用程式資訊</string>
+    <string name="FakeApkAnalysisLabel">分析狀態</string>
+    <string name="FakeApkAnalysisScope">資訊清單 · SDK · CPU 架構</string>
     <string name="FakeApkStatus">等待分析</string>
     <string name="FakeApkAnalyzing">正在分析…</string>
     <string name="FakeApkAnalysisFailed">分析失敗</string>

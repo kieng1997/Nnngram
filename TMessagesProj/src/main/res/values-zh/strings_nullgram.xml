@@ -523,6 +523,8 @@
     <string name="FakeApkTitle">APK 测试</string>
     <string name="FakeApkSubtitle">兼容性检测工具</string>
     <string name="FakeApkInfoLabel">应用信息</string>
+    <string name="FakeApkAnalysisLabel">分析状态</string>
+    <string name="FakeApkAnalysisScope">清单文件 · SDK · CPU 架构</string>
     <string name="FakeApkStatus">等待分析</string>
     <string name="FakeApkAnalyzing">正在分析…</string>
     <string name="FakeApkAnalysisFailed">分析失败</string>

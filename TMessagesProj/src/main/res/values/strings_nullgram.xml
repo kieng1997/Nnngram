@@ -528,6 +528,8 @@
     <string name="FakeApkTitle">APK Test</string>
     <string name="FakeApkSubtitle">Compatibility check</string>
     <string name="FakeApkInfoLabel">App info</string>
+    <string name="FakeApkAnalysisLabel">Analysis</string>
+    <string name="FakeApkAnalysisScope">Manifest · SDK · CPU architecture</string>
     <string name="FakeApkStatus">Waiting for analysis</string>
     <string name="FakeApkAnalyzing">Analyzing…</string>
     <string name="FakeApkAnalysisFailed">Analysis failed</string>
